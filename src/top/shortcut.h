@@ -8,9 +8,9 @@
 #include <string>
 #include <vector>
 #include <utility>
-#include "./op_common.h"
 #include <iostream>
 #include <sstream>
+#include "./op_common.h"
 
 namespace nnvm {
 namespace top {

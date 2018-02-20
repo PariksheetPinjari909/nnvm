@@ -10,8 +10,8 @@ DarkNet symbol frontend.
 from __future__ import absolute_import as _abs
 import math
 import numpy as np
-import tvm
 import cv2
+import tvm
 from nnvm.frontend.darknet_c_interface import __darknetffi__
 from nnvm.frontend.darknet_c_interface import ACTIVATION
 from nnvm.frontend.darknet_c_interface import LAYERTYPE
@@ -518,7 +518,7 @@ def _preproc_layer(net, i, sym_array):
     if i == 0:
         name = 'data'
         attribute = {}
-        sym = _sym.Variable(name, **attribute)
+        sym = [_sym.Variable(name, **attribute)]
     else:
         sym = sym_array[i - 1]
     skip_layer = False
