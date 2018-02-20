@@ -84,6 +84,11 @@ def compute_conv2d(attrs, inputs, _):
         out = topi.nn.depthwise_conv2d_nchw(inputs[0], inputs[1], strides, padding)
     else:
         raise ValueError("not support arbitrary group number for now")
+    if attrs.get_bool("use_batchNorm"):
+        out = topi.nn.batch_norm(out, inputs[3], inputs[4], attrs.get_float("eps"))
+    if attrs.get_bool("use_scales"):
+        scales = topi.expand_dims(inputs[5], axis=1, num_newaxis=2)
+        out = topi.broadcast_mul(out, scales)
     if attrs.get_bool("use_bias"):
         bias = inputs[2]
         expand_axis = 1 if layout == "NCHW" else 0
@@ -194,3 +199,49 @@ def schedule_upsampling(_, outs, target):
         return topi.generic.schedule_injective(outs)
 
 reg.register_pattern("upsampling", OpPattern.INJECTIVE)
+
+@reg.register_compute("shortcut")
+def compute_shortcut(attrs, inputs, _):
+    """Compute definition of shortcut"""
+    out = topi.nn.shortcut(inputs[0], inputs[1])
+    return out
+
+@reg.register_schedule("shortcut")
+def schedule_shortcut(attrs, outs, target):
+    """Schedule definition of shortcut"""
+    with tvm.target.create(target):
+        return topi.generic.schedule_shortcut(outs)
+
+reg.register_pattern("shortcut", OpPattern.OUT_ELEMWISE_FUSABLE)
+
+@reg.register_compute("reorg")
+def compute_reorg(attrs, inputs, _):
+    """Compute definition of reorg"""
+    return topi.nn.reorg(inputs[0], attrs.get_int("stride"))
+
+@reg.register_schedule("reorg")
+def schedule_reorg(attrs, outs, target):
+    """Schedule definition of reorg"""
+    with tvm.target.create(target):
+        return topi.generic.schedule_reorg(outs)
+
+reg.register_pattern("reorg", OpPattern.OUT_ELEMWISE_FUSABLE)
+
+@reg.register_compute("region")
+def compute_region(attrs, inputs, _):
+    """Compute definition of region"""
+    n = attrs.get_int("n")
+    classes = attrs.get_int("classes")
+    coords = attrs.get_int("coords")
+    background = attrs.get_int("background")
+    softmax = attrs.get_int("softmax")
+
+    return topi.nn.region(inputs[0], n, classes, coords, background, softmax)
+
+@reg.register_schedule("region")
+def schedule_region(attrs, outs, target):
+    """Schedule definition of region"""
+    with tvm.target.create(target):
+        return topi.generic.schedule_region(outs)
+
+reg.register_pattern("region", OpPattern.OUT_ELEMWISE_FUSABLE)

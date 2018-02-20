@@ -21,7 +21,19 @@ inline bool Conv2DInferShape(const nnvm::NodeAttrs& attrs,
                              std::vector<TShape>* in_shape,
                              std::vector<TShape>* out_shape) {
   const Conv2DParam& param = nnvm::get<Conv2DParam>(attrs.parsed);
-  if (param.use_bias) {
+  if (param.use_batchNorm && param.use_bias && param.use_scales) {
+    CHECK_EQ(in_shape->size(), 6U) << "Input:[data, weight, bias, moving_mean, moving_var, scales]";
+  } else if (param.use_batchNorm && param.use_scales) {
+    CHECK_EQ(in_shape->size(), 5U) << "Input:[data, weight, moving_mean, moving_var, scales]";
+  } else if (param.use_batchNorm && param.use_bias) {
+    CHECK_EQ(in_shape->size(), 5U) << "Input:[data, weight, bias, moving_mean, moving_var]";
+  } else if (param.use_batchNorm) {
+    CHECK_EQ(in_shape->size(), 4U) << "Input:[data, weight, moving_mean, moving_var]";
+  } else if (param.use_bias && param.use_scales) {
+    CHECK_EQ(in_shape->size(), 4U) << "Input:[data, weight, bias, scales]";
+  } else if (param.use_scales) {
+    CHECK_EQ(in_shape->size(), 3U) << "Input:[data, weight, scales]";
+  } else if (param.use_bias) {
     CHECK_EQ(in_shape->size(), 3U) << "Input:[data, weight, bias]";
   } else {
     CHECK_EQ(in_shape->size(), 2U) << "Input:[data, weight]";
@@ -55,6 +67,17 @@ inline bool Conv2DInferShape(const nnvm::NodeAttrs& attrs,
   if (param.use_bias) {
     NNVM_ASSIGN_INPUT_SHAPE(attrs, *in_shape,
                             Conv2DParam::kBias, TShape({param.channels}));
+    if (param.use_batchNorm) {
+      NNVM_ASSIGN_INPUT_SHAPE(attrs, *in_shape,
+                              Conv2DParam::kMovingMean, TShape({param.channels}));
+
+      NNVM_ASSIGN_INPUT_SHAPE(attrs, *in_shape,
+                              Conv2DParam::kMovingVariance, TShape({param.channels}));
+
+      NNVM_ASSIGN_INPUT_SHAPE(attrs, *in_shape,
+                              Conv2DParam::kScales, TShape({param.channels}));
+    }
+
   }
   // dilation
   dim_t dilated_ksize_y = 1 + (param.kernel_size[0] - 1) * param.dilation[0];
@@ -105,6 +128,8 @@ a bias vector is created and added to the outputs.
             (batch_size, in_channels, height, width) if `layout` is `NCHW`.
 - **weight**: (channels, in_channels, kernel_size[0], kernel_size[1])
 - **bias**: (channels,)
+- **moving_mean**: (channels,) The moving mean, depends on batch normalization
+- **moving_variance**: (channels,) The moving variance, depends on batch_norm
 - **out**:  This depends on the `layout` parameter. Output is 4D array of shape
             (batch_size, channels, out_height, out_width) if `layout` is `NCHW`.
 
@@ -112,14 +137,17 @@ a bias vector is created and added to the outputs.
 .add_argument("data", "4D Tensor", "Input data.")
 .add_argument("weight", "4D Tensor", "Weight matrix.")
 .add_argument("bias", "1D Tensor", "Bias parameter.")
+.add_argument("moving_mean", "1D Tensor", "Moving Mean parameter.")
+.add_argument("moving_var", "1D Tensor", "Moving Variance parameter.")
+.add_argument("scales", "1D Tensor", "Scaling parameter.")
 .add_arguments(Conv2DParam::__FIELDS__())
 .set_attr_parser(ParamParser<Conv2DParam>)
 .set_attr<FGetAttrDict>("FGetAttrDict", ParamGetAttrDict<Conv2DParam>)
-.set_attr<FListInputNames>("FListInputNames", UseBiasListInputNames<Conv2DParam>)
+.set_attr<FListInputNames>("FListInputNames", UseBatchNormBiasListInputNames<Conv2DParam>)
 .set_attr<FInferShape>("FInferShape", Conv2DInferShape)
 .set_attr<FInferType>("FInferType", ElemwiseType<-1, 1>)
 .set_num_outputs(1)
-.set_num_inputs(UseBiasNumInputs<Conv2DParam>)
+.set_num_inputs(UseBatchNormBiasNumInputs<Conv2DParam>)
 .set_support_level(2)
 .set_attr<FGradient>(
   "FGradient", [](const NodePtr& n,
