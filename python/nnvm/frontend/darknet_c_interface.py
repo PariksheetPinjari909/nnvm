@@ -409,4 +409,4 @@ layer make_reorg_layer(int batch, int w, int h, int c, int stride, int reverse, 
 layer make_region_layer(int batch, int w, int h, int n, int classes, int coords);
 void free_network(network *net);
 """
-)
+                   )
