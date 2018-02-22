@@ -7,9 +7,9 @@
 #include <nnvm/node.h>
 #include <nnvm/op_attr_types.h>
 #include <nnvm/top/nn.h>
-#include "./nn_common.h"
-#include "../op_common.h"
-#include "../shortcut.h"
+#include "../nn_common.h"
+#include "../../op_common.h"
+#include "shortcut.h"
 
 namespace nnvm {
 namespace top {

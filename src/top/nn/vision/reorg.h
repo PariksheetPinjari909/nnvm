@@ -2,15 +2,14 @@
  *  Copyright (c) 2017 by Contributors
  * \file reorg.h
  */
-#ifndef NNVM_TOP_REORG_H_
-#define NNVM_TOP_REORG_H_
+#ifndef NNVM_TOP_NN_VISION_REORG_H_
+#define NNVM_TOP_NN_VISION_REORG_H_
 
 #include <string>
 #include <vector>
 #include <utility>
 #include <iostream>
 #include <sstream>
-#include "./op_common.h"
 
 namespace nnvm {
 namespace top {
@@ -83,6 +82,16 @@ inline bool ReorgType(const NodeAttrs& attrs,
   return ReorgAttr<int, type_is_none, type_assign, true, type_string>(
     attrs, in_attrs, out_attrs, -1);
 }
+
+struct ReorgParam : public dmlc::Parameter<ReorgParam> {
+  int stride;
+
+  DMLC_DECLARE_PARAMETER(ReorgParam) {
+    DMLC_DECLARE_FIELD(stride)
+      .set_default(1)
+      .describe("Stride value");
+  }
+};
 }  // namespace top
 }  // namespace nnvm
-#endif  // NNVM_TOP_REORG_H_
+#endif  // NNVM_TOP_NN_VISION_REORG_H_
