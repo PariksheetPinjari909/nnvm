@@ -18,34 +18,6 @@ namespace nnvm {
 namespace top {
 
 template<typename ParamType>
-inline uint32_t UseBatchNormBiasNumInputs(const NodeAttrs& attrs) {
-  const ParamType& param = get<ParamType>(attrs.parsed);
-  return param.use_bias ? (param.use_batchNorm ? 6 : 3) : 2;
-}
-
-template<typename ParamType>
-inline std::vector<std::string> UseBatchNormBiasListInputNames(const NodeAttrs& attrs) {
-  const ParamType& param = nnvm::get<ParamType>(attrs.parsed);
-  if (param.use_batchNorm && param.use_bias && param.use_scales) {
-    return {"data", "weight", "bias", "moving_mean", "moving_var", "scales"};
-  } else if (param.use_batchNorm && param.use_scales) {
-    return {"data", "weight", "moving_mean", "moving_var", "scales"};
-  } else if (param.use_batchNorm && param.use_bias) {
-    return {"data", "weight", "bias", "moving_mean", "moving_var"};
-  } else if (param.use_batchNorm) {
-    return {"data", "weight", "moving_mean", "moving_var"};
-  } else if (param.use_bias && param.use_scales) {
-    return {"data", "weight", "bias", "scales"};
-  } else if (param.use_scales) {
-    return {"data", "weight", "scales"};
-  } else if (param.use_bias) {
-    return {"data", "weight", "bias"};
-  } else {
-    return {"data", "weight"};
-  }
-}
-
-template<typename ParamType>
 inline uint32_t UseBiasNumInputs(const NodeAttrs& attrs) {
   const ParamType& param = get<ParamType>(attrs.parsed);
   return param.use_bias ? 3 : 2;

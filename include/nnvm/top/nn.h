@@ -125,9 +125,6 @@ struct Conv2DParam : public dmlc::Parameter<Conv2DParam> {
   int groups;
   int layout;
   bool use_bias;
-  bool use_batchNorm;
-  bool use_scales;
-  float eps;
 
   DMLC_DECLARE_PARAMETER(Conv2DParam) {
     DMLC_DECLARE_FIELD(channels)
@@ -158,20 +155,11 @@ struct Conv2DParam : public dmlc::Parameter<Conv2DParam> {
                 "'W' dimensions.");
     DMLC_DECLARE_FIELD(use_bias).set_default(true)
       .describe("Whether the layer uses a bias vector.");
-    DMLC_DECLARE_FIELD(use_batchNorm).set_default(false)
-      .describe("Whether the layer uses a batch normalization.");
-    DMLC_DECLARE_FIELD(use_scales).set_default(false)
-      .describe("Whether the layer uses a scales for normalization.");
-    DMLC_DECLARE_FIELD(eps).set_default(0.000001)
-      .describe("Value of epsilon to avoid division by zero.");
   }
   // constants
   static const constexpr int kData = 0;
   static const constexpr int kWeight = 1;
   static const constexpr int kBias = 2;
-  static const constexpr int kMovingMean = 3;
-  static const constexpr int kMovingVariance = 4;
-  static const constexpr int kScales = 4;
 };
 
 
@@ -284,16 +272,6 @@ struct UpSamplingParam : public dmlc::Parameter<UpSamplingParam> {
                 "'N', 'C', 'H', 'W' stands for batch, channel, height, and width"
                 "dimensions respectively. Convolution is applied on the 'H' and"
                 "'W' dimensions.");
-  }
-};
-
-struct ReorgParam : public dmlc::Parameter<ReorgParam> {
-  int stride;
-
-  DMLC_DECLARE_PARAMETER(ReorgParam) {
-    DMLC_DECLARE_FIELD(stride)
-      .set_default(1)
-      .describe("Stride value");
   }
 };
 

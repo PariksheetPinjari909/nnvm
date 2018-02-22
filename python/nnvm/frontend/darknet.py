@@ -113,15 +113,18 @@ def _darknet_conv2d(inputs, attrs):
     new_attrs['groups'] = attrs.get('num_group', 1)
     new_attrs['layout'] = layout
     if attrs.get('use_batchNorm', False) is True:
-        new_attrs['use_batchNorm'] = True
-        new_attrs['eps'] = 0.000001
-    if attrs.get('use_scales', False) is True:
-        new_attrs['use_scales'] = True
-    if attrs.get('use_bias', False) is True:
+        new_attrs['use_bias'] = False
+    else:
         new_attrs['use_bias'] = True
+    out_name = {}
     sym = _darknet_get_nnvm_op(op_name)(*inputs, **new_attrs)
-    out_name = sym.list_output_names()[0].replace('_output', '')
+    out_name[0] = sym.list_output_names()[0].replace('_output', '')
 
+    if attrs.get('use_batchNorm', False) is True:
+        op_name, new_attrs = 'batch_norm', {}
+        new_attrs['epsilon'] = 0.000001
+        sym = _darknet_get_nnvm_op(op_name)(*sym, **new_attrs)
+        out_name[1] = sym.list_output_names()[0].replace('_output', '')
     if 'activation' in attrs:
         new_attrs = {}
         new_attrs['activation'] = attrs['activation']
@@ -352,13 +355,16 @@ def _get_convolution_weights(layer, opname, params, dtype):
     for i in range(0, layer.n):
         biases[i] = layer.biases[i]
 
-    k = _get_tvm_params_name(opname, 'weight')
+    k = _get_tvm_params_name(opname[0], 'weight')
     params[k] = tvm.nd.array(weights)
-    k = _get_tvm_params_name(opname, 'bias')
-    params[k] = tvm.nd.array(biases)
 
     if layer.batch_normalize == 1 and layer.dontloadscales != 1:
-        _get_batchnorm_weights(layer, opname, params, layer.n, dtype)
+        _get_batchnorm_weights(layer, opname[1], params, layer.n, dtype)
+        k = _get_tvm_params_name(opname[1], 'beta')
+        params[k] = tvm.nd.array(biases)
+    else:
+        k = _get_tvm_params_name(opname[0], 'bias')
+        params[k] = tvm.nd.array(biases)
 
 def _get_connected_weights(layer, opname, params, dtype):
     """Parse the weights and biases for fully connected or dense layer."""
@@ -400,7 +406,7 @@ def _get_batchnorm_weights(layer, opname, params, size, dtype):
     params[k] = tvm.nd.array(rolling_mean)
     k = _get_tvm_params_name(opname, 'moving_var')
     params[k] = tvm.nd.array(rolling_variance)
-    k = _get_tvm_params_name(opname, 'scales')
+    k = _get_tvm_params_name(opname, 'gamma')
     params[k] = tvm.nd.array(scales)
 
 def _get_darknet_attrs(net, layer_num):

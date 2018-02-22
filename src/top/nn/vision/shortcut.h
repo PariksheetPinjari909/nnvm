@@ -2,15 +2,14 @@
  *  Copyright (c) 2017 by Contributors
  * \file shortcut.h
  */
-#ifndef NNVM_TOP_SHORTCUT_H_
-#define NNVM_TOP_SHORTCUT_H_
+#ifndef NNVM_TOP_NN_VISION_SHORTCUT_H_
+#define NNVM_TOP_NN_VISION_SHORTCUT_H_
 
 #include <string>
 #include <vector>
 #include <utility>
 #include <iostream>
 #include <sstream>
-#include "./op_common.h"
 
 namespace nnvm {
 namespace top {
@@ -85,4 +84,4 @@ inline bool ShortcutType(const NodeAttrs& attrs,
 }
 }  // namespace top
 }  // namespace nnvm
-#endif  // NNVM_TOP_SHORTCUT_H_
+#endif  // NNVM_TOP_NN_VISION_SHORTCUT_H_
