@@ -1,9 +1,20 @@
 """
 Compile Darknet Models
 =====================
+
 This article is an introductory tutorial to deploy darknet models with NNVM.
+
 All the required models and libraries will be downloaded from the internet
+
 by the script.
+
+Darknet parsing have dependancy with CFFI and CV2 library
+
+Please install CFFI and CV2 before executing this script
+
+pip install cffi
+
+pip install opencv-python
 """
 from ctypes import *
 import math
