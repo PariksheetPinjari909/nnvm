@@ -1,10 +1,7 @@
 """
 Compile Darknet Models
 =====================
-**Author**: `Siju Samuel <https://github.com/siju-samuel/>`_
-
 This article is an introductory tutorial to deploy darknet models with NNVM.
-
 All the required models and libraries will be downloaded from the internet
 by the script.
 """
@@ -13,7 +10,7 @@ import math
 import random
 import nnvm
 import nnvm.frontend.darknet
-from nnvm.frontend.darknet_c_interface import __darknetffi__
+from nnvm.testing.darknet import __darknetffi__
 import numpy as np
 import tvm
 import os, sys, time, urllib, requests
@@ -73,7 +70,6 @@ def download(url, path, overwrite=False, sizecompare=False):
                 return
         print('File {} exists, skip.'.format(path))
         return
-    import urllib.request
     print('Downloading from url {} to {}'.format(url, path))
     try:
         urllib.request.urlretrieve(url, path, reporthook=dlProgress)
@@ -152,7 +148,7 @@ img_url = 'https://github.com/siju-samuel/darknet/blob/master/data/' + \
             test_image   +'?raw=true'
 download(img_url, test_image)
 
-data = nnvm.frontend.darknet.load_image(test_image, net.w, net.h)
+data = nnvm.testing.darknet.load_image(test_image, net.w, net.h)
 ######################################################################
 # Execute on TVM
 # --------------------------------------------------------------------
@@ -200,6 +196,7 @@ with open(imagenet_name) as f:
 
 print("TVM Predicted result : ", imagenet[top1])
 
+"""
 #####################################################################
 # confirm correctness with darknet output
 # --------------------------------------------------------------------
@@ -212,5 +209,5 @@ top1_darknet = ffi.new("int *")
 darknet_lib.top_predictions(net, 1, top1_darknet)
 print("DARKNET LIB Prediction output id : ", top1_darknet[0])
 print("DARKNET predicted result = ", imagenet[top1_darknet[0]])
-
+"""
 
