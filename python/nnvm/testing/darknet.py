@@ -1,13 +1,93 @@
 """
 Compile DarkNet Models
 ====================
-**Author**: `Siju Samuel <https://github.com/siju-samuel/>`_
-
 DarkNet c interface frontend.
 
 """
+from __future__ import division
 from enum import IntEnum
+import math
+import numpy as np
+import cv2
 from cffi import FFI
+
+def _resize_image(img, w_in, h_in):
+    """Resize the image to the given height and width."""
+    imc, imh, imw = img.shape
+    h_in = int(h_in)
+    w_in = int(w_in)
+    part = np.zeros((imc, imh, w_in))
+    resized = np.zeros((imc, h_in, w_in))
+    w_scale = (imw - 1) / (w_in - 1)
+    h_scale = (imh - 1) / (h_in - 1)
+    for k in range(imc):
+        for j in range(imh):
+            for c in range(w_in):
+                if c == w_in - 1 or imw == 1:
+                    part[k][j][c] = img[k][j][imw - 1]
+                else:
+                    fdx, idx = math.modf(c * w_scale)
+                    part[k][j][c] = (1 - fdx) * img[k][j][int(idx)] + \
+                                            fdx * img[k][j][int(idx) + 1]
+    for k in range(imc):
+        for j in range(h_in):
+            fdy, idy = math.modf(j * h_scale)
+            for c in range(w_in):
+                resized[k][j][c] = (1 - fdy)*part[k][int(idy)][c]
+            if (j == h_in - 1) or (imh == 1):
+                continue
+            for c in range(w_in):
+                resized[k][j][c] += fdy * part[k][int(idy) + 1][c]
+    return resized
+
+def _load_image_color(test_image):
+    """To load the image using opencv api and do preprocessing."""
+    imagex = cv2.imread(test_image)
+    imagex = np.array(imagex)
+    imagex = imagex.transpose((2, 0, 1))
+    imagex = np.divide(imagex, 255.0)
+    imagex = np.flip(imagex, 0)
+    return imagex
+
+def _letterbox_image(img, w_in, h_in):
+    """To get the image in boxed format."""
+    imc, imh, imw = img.shape
+    if (w_in / imw) < (h_in / imh):
+        new_w = w_in
+        new_h = imh * w_in / imw
+    else:
+        new_h = h_in
+        new_w = imw * h_in/imh
+    resized = _resize_image(img, new_w, new_h)
+    boxed = np.full((imc, h_in, w_in), 0.5, dtype=float)
+    _, resizedh, resizedw = resized.shape
+    boxed[:, int((h_in - new_h) / 2)
+          :int((h_in - new_h) / 2) + resizedh, int((w_in - new_w) / 2)
+          :int((w_in - new_w) / 2) + resizedw] = resized
+    return boxed
+
+def load_image(image, resize_width, resize_height):
+    """Load the image and convert to the darknet model format.
+    The image processing of darknet is different from normal.
+    Parameters
+    ----------
+    image : string
+        The image file name with path
+
+    resize_width : integer
+        The width to which the image needs to be resized
+
+    resize_height : integer
+        The height to which the image needs to be resized
+
+    Returns
+    -------
+    img : Float array
+        Array of processed image
+    """
+
+    img = _load_image_color(image)
+    return _letterbox_image(img, resize_width, resize_height)
 
 class LAYERTYPE(IntEnum):
     """Darknet LAYERTYPE Class constant."""

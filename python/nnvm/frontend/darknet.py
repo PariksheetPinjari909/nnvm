@@ -1,22 +1,56 @@
 """
-Compile DarkNet Models
-====================
-**Author**: `Siju Samuel <https://github.com/siju-samuel/>`_
-
 DarkNet symbol frontend.
-
 """
 
 from __future__ import absolute_import as _abs
-import math
+from enum import IntEnum
 import numpy as np
-import cv2
 import tvm
-from nnvm.frontend.darknet_c_interface import __darknetffi__
-from nnvm.frontend.darknet_c_interface import ACTIVATION
-from nnvm.frontend.darknet_c_interface import LAYERTYPE
-
 from .. import symbol as _sym
+
+class LAYERTYPE(IntEnum):
+    """Darknet LAYERTYPE Class constant."""
+    CONVOLUTIONAL = 0
+    DECONVOLUTIONAL = 1
+    CONNECTED = 2
+    MAXPOOL = 3
+    SOFTMAX = 4
+    DETECTION = 5
+    DROPOUT = 6
+    CROP = 7
+    ROUTE = 8
+    COST = 9
+    NORMALIZATION = 10
+    AVGPOOL = 11
+    LOCAL = 12
+    SHORTCUT = 13
+    ACTIVE = 14
+    RNN = 15
+    GRU = 16
+    LSTM = 17
+    CRNN = 18
+    BATCHNORM = 19
+    NETWORK = 20
+    XNOR = 21
+    REGION = 22
+    REORG = 23
+    BLANK = 24
+
+class ACTIVATION(IntEnum):
+    """Darknet ACTIVATION Class constant."""
+    LOGISTIC = 0
+    RELU = 1
+    RELIE = 2
+    LINEAR = 3
+    RAMP = 4
+    TANH = 5
+    PLSE = 6
+    LEAKY = 7
+    ELU = 8
+    LOGGY = 9
+    STAIR = 10
+    HARDTAN = 11
+    LHTAN = 12
 
 __all__ = ['from_darknet']
 
@@ -214,14 +248,14 @@ def _darknet_route(inputs, attrs):
 
 def _darknet_reorg(inputs, attrs):
     """Process the reorg operation."""
-    op_name, new_attrs = 'reorg', {}
+    op_name, new_attrs = 'yolo2_reorg', {}
     if 'stride' in attrs:
         new_attrs = {'stride': attrs.get('stride', 1)}
     return _darknet_get_nnvm_op(op_name)(*inputs, **new_attrs), None
 
 def _darknet_region(inputs, attrs):
     """Process the region operation."""
-    op_name, new_attrs = 'region', {}
+    op_name, new_attrs = 'yolo2_region', {}
     if 'n' in attrs:
         new_attrs['n'] = attrs.get('n', 1)
     if 'classes' in attrs:
@@ -550,7 +584,6 @@ def _preproc_layer(net, i, sym_array):
 
     return skip_layer, sym
 
-
 def _from_darknet(net, dtype='float32'):
     """To convert the darknet symbol to nnvm symbols."""
     sym_array = {}
@@ -565,84 +598,6 @@ def _from_darknet(net, dtype='float32'):
         sym_array[i] = sym
 
     return sym, tvmparams
-
-def _resize_image(img, w_in, h_in):
-    """Resize the image to the given height and width."""
-    imc, imh, imw = img.shape
-    h_in = int(h_in)
-    w_in = int(w_in)
-    part = np.zeros((imc, imh, w_in))
-    resized = np.zeros((imc, h_in, w_in))
-    w_scale = (imw - 1) / (w_in - 1)
-    h_scale = (imh - 1) / (h_in - 1)
-    for k in range(imc):
-        for j in range(imh):
-            for c in range(w_in):
-                if c == w_in - 1 or imw == 1:
-                    part[k][j][c] = img[k][j][imw - 1]
-                else:
-                    fdx, idx = math.modf(c * w_scale)
-                    part[k][j][c] = (1 - fdx) * img[k][j][int(idx)] + \
-                                            fdx * img[k][j][int(idx) + 1]
-    for k in range(imc):
-        for j in range(h_in):
-            fdy, idy = math.modf(j * h_scale)
-            for c in range(w_in):
-                resized[k][j][c] = (1 - fdy)*part[k][int(idy)][c]
-            if (j == h_in - 1) or (imh == 1):
-                continue
-            for c in range(w_in):
-                resized[k][j][c] += fdy * part[k][int(idy) + 1][c]
-    return resized
-
-def _load_image_color(test_image):
-    """To load the image using opencv api and do preprocessing."""
-    imagex = cv2.imread(test_image)
-    imagex = np.array(imagex)
-    imagex = imagex.transpose((2, 0, 1))
-    imagex = np.divide(imagex, 255)
-    imagex = np.flip(imagex, 0)
-    return imagex
-
-def _letterbox_image(img, w_in, h_in):
-    """To get the image in boxed format."""
-    imc, imh, imw = img.shape
-    if (w_in / imw) < (h_in / imh):
-        new_w = w_in
-        new_h = imh * w_in / imw
-    else:
-        new_h = h_in
-        new_w = imw * h_in/imh
-    resized = _resize_image(img, new_w, new_h)
-    boxed = np.full((imc, h_in, w_in), 0.5, dtype=float)
-    _, resizedh, resizedw = resized.shape
-    boxed[:, int((h_in - new_h) / 2)
-          :int((h_in - new_h) / 2) + resizedh, int((w_in - new_w) / 2)
-          :int((w_in - new_w) / 2) + resizedw,] = resized
-    return boxed
-
-def load_image(image, resize_width, resize_height):
-    """Load the image and convert to the darknet model format.
-    The image processing of darknet is different from normal.
-    Parameters
-    ----------
-    image : string
-        The image file name with path
-
-    resize_width : integer
-        The width to which the image needs to be resized
-
-    resize_height : integer
-        The height to which the image needs to be resized
-
-    Returns
-    -------
-    img : Float array
-        Array of processed image
-    """
-
-    img = _load_image_color(image)
-    return _letterbox_image(img, resize_width, resize_height)
 
 def from_darknet(net, dtype='float32'):
     """Convert from darknet's model into compatible NNVM format.

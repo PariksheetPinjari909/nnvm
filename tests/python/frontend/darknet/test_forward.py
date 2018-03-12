@@ -1,10 +1,7 @@
 """
 Compile Darknet Models
 =====================
-**Author**: `Pariksheet Pinjari`_
-
 This article is a test script to test darknet models with NNVM.
-
 All the required models and libraries will be downloaded from the internet
 by the script.
 """
@@ -12,10 +9,15 @@ import os
 import requests
 import numpy as np
 from nnvm import frontend
-from nnvm.frontend.darknet_c_interface import __darknetffi__
+from nnvm.testing.darknet import __darknetffi__
 import nnvm.compiler
 import tvm
+import sys
 
+if sys.version_info >= (3,):
+    import urllib.request as urllib2
+else:
+    import urllib
 def _download(url, path, overwrite=False, sizecompare=False):
     ''' Download from internet'''
     if os.path.isfile(path) and not overwrite:
@@ -32,9 +34,12 @@ def _download(url, path, overwrite=False, sizecompare=False):
                 return
         print('File {} exists, skip.'.format(path))
         return
-    import urllib.request
     print('Downloading from url {} to {}'.format(url, path))
-    urllib.request.urlretrieve(url, path)
+    try:
+        urllib.request.urlretrieve(url, path)
+        print('')
+    except:
+        urllib.urlretrieve(url, path)
 
 DARKNET_LIB = 'libdarknet.so'
 DARKNETLIB_URL = 'https://github.com/siju-samuel/darknet/blob/master/lib/' \
