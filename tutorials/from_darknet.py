@@ -138,7 +138,6 @@ def save_lib():
 + "deploy_param.params", "wb") as fo:
         fo.write(nnvm.compiler.save_param_dict(params))
 #save_lib()
-
 ######################################################################
 # Load a test image
 # --------------------------------------------------------------------
@@ -195,19 +194,3 @@ with open(imagenet_name) as f:
     imagenet = f.readlines()
 
 print("TVM Predicted result : ", imagenet[top1])
-
-"""
-#####################################################################
-# confirm correctness with darknet output
-# --------------------------------------------------------------------
-start_time = time.time()
-darknet_lib.network_predict_image(net, darknet_lib.load_image_color(test_image.encode('utf-8'), 0, 0))
-print("DARKNET Run Time = %s seconds." % (time.time() - start_time))
-from cffi import FFI
-ffi = FFI()
-top1_darknet = ffi.new("int *")
-darknet_lib.top_predictions(net, 1, top1_darknet)
-print("DARKNET LIB Prediction output id : ", top1_darknet[0])
-print("DARKNET predicted result = ", imagenet[top1_darknet[0]])
-"""
-
