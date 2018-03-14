@@ -22,6 +22,7 @@ import random
 import nnvm
 import nnvm.frontend.darknet
 from nnvm.testing.darknet import __darknetffi__
+import matplotlib.pyplot as plt
 import numpy as np
 import tvm
 import os, sys, time, urllib, requests
@@ -31,6 +32,16 @@ if sys.version_info >= (3,):
 else:
     import urllib2
     import urlparse
+
+######################################################################
+# Set the parameters here.
+# Supported models alexnet, resnet50, resnet152, extraction, yolo
+######################################################################
+model_name = 'yolo'
+test_image = 'dog.jpg'
+target = 'llvm'
+ctx = tvm.cpu(0)
+######################################################################
 
 def dlProgress(count, block_size, total_size):
     """Show the download progress."""
@@ -93,8 +104,6 @@ def download(url, path, overwrite=False, sizecompare=False):
 # Pretrained model available https://pjreddie.com/darknet/imagenet/
 # --------------------------------------------------------------------
 # Download cfg and weights file first time.
-# Supported models alexnet, resnet50, resnet152, extraction, yolo
-model_name = 'resnet50'
 
 cfg_name = model_name + '.cfg'
 weights_name = model_name + '.weights'
@@ -127,7 +136,6 @@ sym, params = nnvm.frontend.darknet.from_darknet(net, dtype)
 # --------------------------------------------------------------------
 # compile the model
 data = np.empty([batch_size, net.c ,net.h, net.w], dtype);
-target = 'llvm'
 shape = {'data': data.shape}
 print("Compiling the model...")
 with nnvm.compiler.build_config(opt_level=2):
@@ -142,29 +150,29 @@ def save_lib():
     path_name = 'nnvm_darknet_' + model_name
     path_lib = path_name + '_deploy_lib.so'
     lib.export_library(path_lib)
-    with open(path_name 
+    with open(path_name
 + "deploy_graph.json", "w") as fo:
         fo.write(graph.json())
-    with open(path_name 
+    with open(path_name
 + "deploy_param.params", "wb") as fo:
         fo.write(nnvm.compiler.save_param_dict(params))
 #save_lib()
+
 ######################################################################
 # Load a test image
 # --------------------------------------------------------------------
 print("Loading the test image...")
-test_image = 'dog.jpg'
 img_url = 'https://github.com/siju-samuel/darknet/blob/master/data/' + \
             test_image   +'?raw=true'
 download(img_url, test_image)
 
 data = nnvm.testing.darknet.load_image(test_image, net.w, net.h)
+
 ######################################################################
 # Execute on TVM
 # --------------------------------------------------------------------
 # The process is no different from other examples.
 from tvm.contrib import graph_runtime
-ctx = tvm.cpu(0)
 
 m = graph_runtime.create(graph, lib, ctx)
 
@@ -180,28 +188,75 @@ timediff = (time.time() - start_time)
 # get outputs
 out_shape = (net.outputs,)
 tvm_out = m.get_output(0, tvm.nd.empty(out_shape, dtype)).asnumpy()
-top1 = np.argmax(tvm_out)
-print("TVM Run Time = %s seconds." % timediff)
-print('TVM Prediction output id : ', top1)
 
+if model_name == 'yolo':
+    thresh = 0.24
+    hier_thresh = 0.5
+    img = nnvm.testing.darknet.load_image_color(test_image)
+    _, im_h, im_w = img.shape
+    probs= []
+    boxes = []
+    region_layer = net.layers[net.n - 1]
+    boxes, probs = nnvm.testing.darknet.get_region_boxes(region_layer, im_w, im_h, net.w, net.h,
+                           thresh, probs, boxes, 1, tvm_out)
+
+    boxes, probs = nnvm.testing.darknet.do_nms_sort(boxes, probs,
+                           region_layer.w*region_layer.h*region_layer.n, region_layer.classes, 0.3)
+
+    coco_name = 'coco.names'
+    coco_url = 'https://github.com/siju-samuel/darknet/blob/master/data/' + coco_name   +'?raw=true'
+    font_name = 'arial.ttf'
+    font_url = 'https://github.com/siju-samuel/darknet/blob/master/data/' + font_name   +'?raw=true'
+    download(coco_url, coco_name)
+    download(font_url, font_name)
+
+    with open(coco_name) as f:
+        content = f.readlines()
+
+    names = [x.strip() for x in content]
+
+    nnvm.testing.darknet.draw_detections(img, region_layer.w*region_layer.h*region_layer.n,
+                     thresh, boxes, probs, names, region_layer.classes)
+    plt.imshow(img.transpose(1,2,0))
+    plt.show()
+else:
+    top1 = np.argmax(tvm_out)
+    print("TVM Run Time = %s seconds." % timediff)
+    print('TVM Prediction output id : ', top1)
+
+    #####################################################################
+    # Look up synset name
+    # --------------------------------------------------------------------
+    # Look up prdiction top 1 index in 1000 class imagenet.
+    out_name_file = {}
+    out_name_file['alexnet'] = "imagenet.shortnames.list"
+    out_name_file['resnet50'] = "imagenet.shortnames.list"
+    out_name_file['resnet152'] = "imagenet.shortnames.list"
+    out_name_file['extraction'] = "imagenet.shortnames.list"
+
+    imagenet_name = out_name_file[model_name]
+    imagenet_url = 'https://github.com/siju-samuel/darknet/blob/master/data/' \
+                    + imagenet_name +'?raw=true'
+
+    download(imagenet_url, imagenet_name)
+    with open(imagenet_name) as f:
+        imagenet = f.readlines()
+
+    print("TVM Predicted result : ", imagenet[top1])
+
+'''
 #####################################################################
-# Look up synset name
+# confirm correctness with darknet output
 # --------------------------------------------------------------------
-# Look up prdiction top 1 index in 1000 class imagenet.
-out_name_file = {}
-out_name_file['yolo'] = "coco.names"
-out_name_file['yolo-voc'] = "voc.names"
-out_name_file['alexnet'] = "imagenet.shortnames.list"
-out_name_file['resnet50'] = "imagenet.shortnames.list"
-out_name_file['resnet152'] = "imagenet.shortnames.list"
-out_name_file['extraction'] = "imagenet.shortnames.list"
+start_time = time.time()
+darknet_lib.network_predict_image(net, darknet_lib.load_image_color(test_image.encode('utf-8'),0,0))
+print("DARKNET Run Time = %s seconds." % (time.time() - start_time))
+from cffi import FFI
+ffi = FFI()
+top1_darknet = ffi.new("int *")
+darknet_lib.top_predictions(net, 1, top1_darknet)
+print("DARKNET LIB Prediction output id : ", top1_darknet[0])
+print("DARKNET predicted result = ", imagenet[top1_darknet[0]])
+#print("top1_darknet", top1_darknet)
+'''
 
-imagenet_name = out_name_file[model_name]
-imagenet_url = 'https://github.com/siju-samuel/darknet/blob/master/data/' \
-                + imagenet_name +'?raw=true'
-
-download(imagenet_url, imagenet_name)
-with open(imagenet_name) as f:
-    imagenet = f.readlines()
-
-print("TVM Predicted result : ", imagenet[top1])

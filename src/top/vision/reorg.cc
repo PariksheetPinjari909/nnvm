@@ -36,19 +36,18 @@ inline bool ReorgInferShape(const nnvm::NodeAttrs &attrs,
 }
 
 NNVM_REGISTER_OP(yolo2_reorg)
-    .describe(
-        R"(Perform reorg operation on input array based on the stride value.
-         - **data**: Input is 4D array of shape (batch_size, channels, in_height, in_width).
-         - **out**: Output is 4D array of shape (batch_size, channels/(stride*stride), in_height*stride, in_width*stride).
-         )" NNVM_ADD_FILELINE)
-    .set_num_inputs(1)
-    .set_num_outputs(1)
-    .set_support_level(5)
-    .add_argument("data", "Tensor", "Data input to reorganize")
-    .set_attr_parser(ParamParser<ReorgParam>)
-    .add_arguments(ReorgParam::__FIELDS__())
-    .set_attr<FGetAttrDict>("FGetAttrDict", ParamGetAttrDict<ReorgParam>)
-    .set_attr<FInferType>("FInferType", ElemwiseType<-1, 1>)
-    .set_attr<FInferShape>("FInferShape", ReorgInferShape);
+.describe(R"(Perform reorg operation on input array based on the stride value.
+- **data**: Input is 4D array of shape (batch_size, channels, in_height, in_width).
+- **out**: Output is 4D array of shape (batch_size, channels/(stride*stride), in_height*stride, in_width*stride).
+)" NNVM_ADD_FILELINE)
+.set_num_inputs(1)
+.set_num_outputs(1)
+.set_support_level(5)
+.add_argument("data", "Tensor", "Data input to reorganize")
+.set_attr_parser(ParamParser<ReorgParam>)
+.add_arguments(ReorgParam::__FIELDS__())
+.set_attr<FGetAttrDict>("FGetAttrDict", ParamGetAttrDict<ReorgParam>)
+.set_attr<FInferType>("FInferType", ElemwiseType<-1, 1>)
+.set_attr<FInferShape>("FInferShape", ReorgInferShape);
 }  // namespace top
 }  // namespace nnvm
