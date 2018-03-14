@@ -145,7 +145,7 @@ with nnvm.compiler.build_config(opt_level=2):
 # Save the json
 # --------------------------------------------------------------------
 def save_lib():
-    '''Save the graph, params and .so to the current directory'''
+    #Save the graph, params and .so to the current directory
     print("Saving the compiled output...")
     path_name = 'nnvm_darknet_' + model_name
     path_lib = path_name + '_deploy_lib.so'
@@ -244,19 +244,16 @@ else:
 
     print("TVM Predicted result : ", imagenet[top1])
 
-'''
 #####################################################################
 # confirm correctness with darknet output
 # --------------------------------------------------------------------
-start_time = time.time()
-darknet_lib.network_predict_image(net, darknet_lib.load_image_color(test_image.encode('utf-8'),0,0))
-print("DARKNET Run Time = %s seconds." % (time.time() - start_time))
-from cffi import FFI
-ffi = FFI()
-top1_darknet = ffi.new("int *")
-darknet_lib.top_predictions(net, 1, top1_darknet)
-print("DARKNET LIB Prediction output id : ", top1_darknet[0])
-print("DARKNET predicted result = ", imagenet[top1_darknet[0]])
+#start_time = time.time()
+#darknet_lib.network_predict_image(net, darknet_lib.load_image_color(test_image.encode('utf-8'),0,0))
+#print("DARKNET Run Time = %s seconds." % (time.time() - start_time))
+#from cffi import FFI
+#ffi = FFI()
+#top1_darknet = ffi.new("int *")
+#darknet_lib.top_predictions(net, 1, top1_darknet)
+#print("DARKNET LIB Prediction output id : ", top1_darknet[0])
+#print("DARKNET predicted result = ", imagenet[top1_darknet[0]])
 #print("top1_darknet", top1_darknet)
-'''
-
