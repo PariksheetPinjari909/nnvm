@@ -1,4 +1,4 @@
-# pylint: disable=invalid-name, unused-variable, unused-argument
+# pylint: disable=invalid-name, unused-variable, unused-argument, old-style-class, no-init
 """
 Compile DarkNet Models
 ====================
