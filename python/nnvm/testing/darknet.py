@@ -206,10 +206,11 @@ def _get_label(labelstr, rgb):
     return opencvImage.transpose(2, 0, 1)
 
 def _get_color(c, x, max_value):
+    c = int(c)
     colors = [[1, 0, 1], [0, 0, 1], [0, 1, 1], [0, 1, 0], [1, 1, 0], [1, 0, 0]]
     ratio = (float(x)/float(max_value)) * 5
-    i = math.floor(ratio)
-    j = math.ceil(ratio)
+    i = int(math.floor(ratio))
+    j = int(math.ceil(ratio))
     ratio -= i
     r = (1-ratio) * colors[i][c] + ratio*colors[j][c]
     return r
