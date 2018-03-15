@@ -347,10 +347,16 @@ NNVM_REGISTER_OP(relu)
 NNVM_REGISTER_OP(leaky_relu)
 .set_attr<FScaleAxisBackward>("FScaleAxisBackward", ReluScaleAxisBackward);
 
+NNVM_REGISTER_OP(prelu)
+.set_attr<FScaleAxisBackward>("FScaleAxisBackward", ReluScaleAxisBackward);
+
 NNVM_REGISTER_OP(relu)
 .set_attr<FScaleAxisForward>("FScaleAxisForward", ReluScaleAxisForward);
 
 NNVM_REGISTER_OP(leaky_relu)
+.set_attr<FScaleAxisForward>("FScaleAxisForward", ReluScaleAxisForward);
+
+NNVM_REGISTER_OP(prelu)
 .set_attr<FScaleAxisForward>("FScaleAxisForward", ReluScaleAxisForward);
 
 // property registration.

@@ -417,6 +417,43 @@ NNVM_REGISTER_OP(leaky_relu)
 })
 .set_support_level(1);
 
+NNVM_REGISTER_OP(prelu)
+.describe(R"code(Parametric version of a Rectified Linear Unit.
+It accepts two arguments: an input ``x`` and a weight array ``W``
+and computes the output as :math:`PReLU(x) y = x > 0 ? x : W * x`,
+where :math:`*` is an elementwise multiplication for each sample in the
+
+)code" NNVM_ADD_FILELINE)
+.add_argument("data", "Tensor", "Input data.")
+.add_argument("weight", "Tensor", "Input weights.")
+.set_num_inputs(2)
+.set_num_outputs(1)
+.set_attr<FInferShape>("FInferShape", ElemwiseShape<2, 1>)
+.set_attr<FInferType>("FInferType", ElemwiseType<2, 1>)
+.set_attr<FTVMCompute>(
+  "FTVMCompute", [](const NodeAttrs& attrs,
+                    const Array<Tensor>& inputs,
+                    const Array<Tensor>& out_info) {
+    return Array<Tensor>{ topi::prelu<float>(inputs[0], inputs[1])};
+  })
+.set_attr<FGradient>(
+  "FGradient", [](const NodePtr& n,
+                  const std::vector<NodeEntry>& ograds) {
+    // y = prelu(x)
+    // grad = indicator(x > 0) + W * indicator(x < 0)
+    NodeEntry zero = MakeNode("zeros_like", n->attrs.name + "_grad_zero",
+                              {n->inputs[0]});
+    NodeEntry sub0 = MakeNode("greater", n->attrs.name + "_pos_grad",
+                              {n->inputs[0], zero}, {{"exclude", "true"}});
+    NodeEntry sub1 = MakeNode("less", n->attrs.name + "_neg_grad",
+                              {n->inputs[0], zero}, {{"exclude", "true"}});
+    NodeEntry mul0 = MakeNode("elemwise_mul", n->attrs.name + "_neg_mul_0",
+                              {sub1, n->inputs[1]});
+    return std::vector<NodeEntry>{
+      MakeNode("elemwise_add", n->attrs.name + "_add_grad", {sub0, mul0})
+    };
+})
+.set_support_level(1);
 
 DMLC_REGISTER_PARAMETER(PadParam);
 

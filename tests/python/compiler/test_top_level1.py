@@ -64,6 +64,24 @@ def test_relu():
     inputs = [('x', dshape, x)]
     helper(y, inputs, dtype, forward, backward)
 
+def test_prelu():
+    x = sym.Variable("x")
+    w = sym.Variable("w")
+    y = sym.prelu(x, w)
+
+    def forward(x, w):
+        return ((x < 0) * x * w + (x > 0) * x)
+
+    dtype = "float32"
+    dshape_x = (1, 3, 32, 32)
+    dshape_w = (1, 3, 32, 32)
+
+    inputs = {
+        'x': (dshape_x, x),
+        'w': (dshape_w, w)
+    }
+
+    helper(y, inputs, dtype, forward)
 
 def test_sym_scalar_pow():
     scalar = 3
@@ -336,6 +354,7 @@ if __name__ == "__main__":
     test_batchnorm()
     test_dense()
     test_relu()
+    test_prelu()
     test_sym_scalar_pow()
     test_scalar_sym_pow()
     test_exp()
