@@ -125,6 +125,11 @@ darknet_lib = 'libdarknet.so'
 darknetlib_url = 'https://github.com/siju-samuel/darknet/blob/master/lib/' + \
                         darknet_lib + '?raw=true'
 download(darknetlib_url, darknet_lib)
+
+#if the file doesnt exist, then exit normally.
+if os.path.isfile('./' + darknet_lib) is False:
+    exit(0)
+
 darknet_lib = __darknetffi__.dlopen('./' + darknet_lib)
 cfg = "./" + str(cfg_name)
 weights = "./" + str(weights_name)
