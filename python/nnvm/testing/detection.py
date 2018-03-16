@@ -105,20 +105,17 @@ def get_region_boxes(layer_in, imw, imh, netw, neth, thresh, probs,
 
 def do_nms_sort(boxes, probs, total, classes, thresh):
     "Does the sorting based on the threshold values"
-    class SortableBbox:
-        index_var = 0
-        class_var = 0
-        probs = []
+    SortableBbox = namedtuple('SortableBbox', ['index_var', 'class_var', 'probs'])
 
-    s = [SortableBbox() for i in range(total)]
+    s = [SortableBbox(0, 0, []) for i in range(total)]
     for i in range(total):
-        s[i].index_var = i
-        s[i].class_var = 0
-        s[i].probs = probs
+        s[i] = s[i]._replace(index_var=i)
+        s[i] = s[i]._replace(class_var=0)
+        s[i] = s[i]._replace(probs=probs)
 
     for k in range(classes):
         for i in range(total):
-            s[i].class_var = k
+            s[i] = s[i]._replace(class_var=k)
         s = sorted(s, key=lambda x: x.probs[x.index_var][x.class_var], reverse=True)
         for i in range(total):
             if probs[s[i].index_var][k] == 0:
