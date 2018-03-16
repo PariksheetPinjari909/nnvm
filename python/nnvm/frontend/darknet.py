@@ -4,6 +4,7 @@ DarkNet symbol frontend.
 
 from __future__ import absolute_import as _abs
 from enum import IntEnum
+from cffi import FFI
 import numpy as np
 import tvm
 from .. import symbol as _sym
@@ -364,6 +365,13 @@ def _as_list(arr):
         return arr
     return [arr]
 
+def _read_memory_buffer(shape, data, dtype):
+    float_size = 4
+    length = 1
+    for x in shape:
+        length *= x
+    return np.frombuffer(FFI().buffer(data, length*float_size), dtype).reshape(shape)
+
 def _get_darknet_layername(layer_type):
     """Get the layer name from the darknet enums."""
     return str((LAYERTYPE(layer_type))).replace('LAYERTYPE.', '')
@@ -376,18 +384,9 @@ def _get_convolution_weights(layer, opname, params, dtype):
     if (layer.n * layer.c * layer.size * layer.size) != layer.nweights:
         raise RuntimeError("layer weights size not matching with n c h w")
 
-    cnt = 0
-    weights = np.zeros((layer.n, layer.c, layer.size, layer.size), dtype)
-    for i in range(layer.n):
-        for j in range(layer.c):
-            for k in range(layer.size):
-                for m in range(layer.size):
-                    weights[i][j][k][m] = layer.weights[cnt]
-                    cnt = cnt + 1
+    weights = _read_memory_buffer((layer.n, layer.c, layer.size, layer.size), layer.weights, dtype)
 
-    biases = np.zeros(layer.n, dtype)
-    for i in range(0, layer.n):
-        biases[i] = layer.biases[i]
+    biases = _read_memory_buffer((layer.n, ), layer.biases, dtype)
 
     k = _get_tvm_params_name(opname[0], 'weight')
     params[k] = tvm.nd.array(weights)
@@ -406,16 +405,8 @@ def _get_connected_weights(layer, opname, params, dtype):
     if size == 0:
         return
 
-    weights = np.zeros((layer.outputs, layer.inputs), dtype)
-    cnt = 0
-    for i in range(layer.outputs):
-        for j in range(layer.inputs):
-            weights[i][j] = layer.weights[cnt]
-            cnt += 1
-
-    biases = np.zeros(layer.outputs, dtype)
-    for i in range(layer.outputs):
-        biases[i] = layer.biases[i]
+    weights = _read_memory_buffer((layer.outputs, layer.inputs), layer.weights, dtype)
+    biases = _read_memory_buffer((layer.outputs, ), layer.biases, dtype)
 
     k = _get_tvm_params_name(opname, 'weight')
     params[k] = tvm.nd.array(weights)
@@ -428,13 +419,9 @@ def _get_connected_weights(layer, opname, params, dtype):
 def _get_batchnorm_weights(layer, opname, params, size, dtype):
     """Parse the weights for batchnorm, which includes, scales, moving mean
     and moving variances."""
-    scales = np.zeros(size, dtype)
-    rolling_mean = np.zeros(size, dtype)
-    rolling_variance = np.zeros(size, dtype)
-    for i in range(size):
-        scales[i] = layer.scales[i]
-        rolling_mean[i] = layer.rolling_mean[i]
-        rolling_variance[i] = layer.rolling_variance[i]
+    scales = _read_memory_buffer((size, ), layer.scales, dtype)
+    rolling_mean = _read_memory_buffer((size, ), layer.rolling_mean, dtype)
+    rolling_variance = _read_memory_buffer((size, ), layer.rolling_variance, dtype)
 
     k = _get_tvm_params_name(opname, 'moving_mean')
     params[k] = tvm.nd.array(rolling_mean)

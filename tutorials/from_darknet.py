@@ -1,12 +1,15 @@
 """
-Compile Darknet Models
+Tutorial for running Yolo-V2 in Darknet Models
 =====================
+**Author**: `Siju Samuel <https://siju-samuel.github.io/>`_
 
 This article is an introductory tutorial to deploy darknet models with NNVM.
 
 All the required models and libraries will be downloaded from the internet
 
 by the script.
+
+This script runs the YOLO-V2 Model with the bounding boxes
 
 Darknet parsing have dependancy with CFFI and CV2 library
 
@@ -180,80 +183,40 @@ m = graph_runtime.create(graph, lib, ctx)
 m.set_input('data', tvm.nd.array(data.astype(dtype)))
 m.set_input(**params)
 # execute
-print("Predicing the test image...")
+print("Running the test image...")
 
-start_time = time.time()
 m.run()
-timediff = (time.time() - start_time)
 # get outputs
 out_shape = (net.outputs,)
 tvm_out = m.get_output(0, tvm.nd.empty(out_shape, dtype)).asnumpy()
 
-if model_name == 'yolo':
-    thresh = 0.24
-    hier_thresh = 0.5
-    img = nnvm.testing.darknet.load_image_color(test_image)
-    _, im_h, im_w = img.shape
-    probs= []
-    boxes = []
-    region_layer = net.layers[net.n - 1]
-    boxes, probs = nnvm.testing.darknet.get_region_boxes(region_layer, im_w, im_h, net.w, net.h,
-                           thresh, probs, boxes, 1, tvm_out)
+#do the detection and bring up the bounding boxes
+thresh = 0.24
+hier_thresh = 0.5
+img = nnvm.testing.darknet.load_image_color(test_image)
+_, im_h, im_w = img.shape
+probs= []
+boxes = []
+region_layer = net.layers[net.n - 1]
+boxes, probs = nnvm.testing.detection.get_region_boxes(region_layer, im_w, im_h, net.w, net.h,
+                       thresh, probs, boxes, 1, tvm_out)
 
-    boxes, probs = nnvm.testing.darknet.do_nms_sort(boxes, probs,
-                           region_layer.w*region_layer.h*region_layer.n, region_layer.classes, 0.3)
+boxes, probs = nnvm.testing.detection.do_nms_sort(boxes, probs,
+                       region_layer.w*region_layer.h*region_layer.n, region_layer.classes, 0.3)
 
-    coco_name = 'coco.names'
-    coco_url = 'https://github.com/siju-samuel/darknet/blob/master/data/' + coco_name   +'?raw=true'
-    font_name = 'arial.ttf'
-    font_url = 'https://github.com/siju-samuel/darknet/blob/master/data/' + font_name   +'?raw=true'
-    download(coco_url, coco_name)
-    download(font_url, font_name)
+coco_name = 'coco.names'
+coco_url = 'https://github.com/siju-samuel/darknet/blob/master/data/' + coco_name   +'?raw=true'
+font_name = 'arial.ttf'
+font_url = 'https://github.com/siju-samuel/darknet/blob/master/data/' + font_name   +'?raw=true'
+download(coco_url, coco_name)
+download(font_url, font_name)
 
-    with open(coco_name) as f:
-        content = f.readlines()
+with open(coco_name) as f:
+    content = f.readlines()
 
-    names = [x.strip() for x in content]
+names = [x.strip() for x in content]
 
-    nnvm.testing.darknet.draw_detections(img, region_layer.w*region_layer.h*region_layer.n,
-                     thresh, boxes, probs, names, region_layer.classes)
-    plt.imshow(img.transpose(1,2,0))
-    plt.show()
-else:
-    top1 = np.argmax(tvm_out)
-    print("TVM Run Time = %s seconds." % timediff)
-    print('TVM Prediction output id : ', top1)
-
-    #####################################################################
-    # Look up synset name
-    # --------------------------------------------------------------------
-    # Look up prdiction top 1 index in 1000 class imagenet.
-    out_name_file = {}
-    out_name_file['alexnet'] = "imagenet.shortnames.list"
-    out_name_file['resnet50'] = "imagenet.shortnames.list"
-    out_name_file['resnet152'] = "imagenet.shortnames.list"
-    out_name_file['extraction'] = "imagenet.shortnames.list"
-
-    imagenet_name = out_name_file[model_name]
-    imagenet_url = 'https://github.com/siju-samuel/darknet/blob/master/data/' \
-                    + imagenet_name +'?raw=true'
-
-    download(imagenet_url, imagenet_name)
-    with open(imagenet_name) as f:
-        imagenet = f.readlines()
-
-    print("TVM Predicted result : ", imagenet[top1])
-
-#####################################################################
-# confirm correctness with darknet output
-# --------------------------------------------------------------------
-#start_time = time.time()
-#darknet_lib.network_predict_image(net, darknet_lib.load_image_color(test_image.encode('utf-8'),0,0))
-#print("DARKNET Run Time = %s seconds." % (time.time() - start_time))
-#from cffi import FFI
-#ffi = FFI()
-#top1_darknet = ffi.new("int *")
-#darknet_lib.top_predictions(net, 1, top1_darknet)
-#print("DARKNET LIB Prediction output id : ", top1_darknet[0])
-#print("DARKNET predicted result = ", imagenet[top1_darknet[0]])
-#print("top1_darknet", top1_darknet)
+nnvm.testing.detection.draw_detections(img, region_layer.w*region_layer.h*region_layer.n,
+                 thresh, boxes, probs, names, region_layer.classes)
+plt.imshow(img.transpose(1,2,0))
+plt.show()
