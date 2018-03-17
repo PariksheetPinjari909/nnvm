@@ -85,7 +85,7 @@ inline bool RegionType(const NodeAttrs &attrs, std::vector<int> *in_attrs,
   }
   return RegionAttr<int, type_is_none, type_assign, true, type_string>(
       attrs, in_attrs, out_attrs, -1);
-  }
-  }  // namespace top
-  }  // namespace nnvm
+}
+}  // namespace top
+}  // namespace nnvm
 #endif  // NNVM_TOP_VISION_YOLO2_REGION_H_
