@@ -4,7 +4,6 @@ DarkNet symbol frontend.
 
 from __future__ import absolute_import as _abs
 from enum import IntEnum
-from cffi import FFI
 import numpy as np
 import tvm
 from .. import symbol as _sym
@@ -366,11 +365,13 @@ def _as_list(arr):
     return [arr]
 
 def _read_memory_buffer(shape, data, dtype):
-    float_size = 4
     length = 1
     for x in shape:
         length *= x
-    return np.frombuffer(FFI().buffer(data, length*float_size), dtype).reshape(shape)
+    data_np = np.zeros(length, dtype=dtype)
+    for i in range(length):
+        data_np[i] = data[i]
+    return data_np.reshape(shape)
 
 def _get_darknet_layername(layer_type):
     """Get the layer name from the darknet enums."""
