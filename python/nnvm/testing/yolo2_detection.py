@@ -1,6 +1,6 @@
 # pylint: disable=invalid-name, unused-variable, unused-argument, no-init
 """
-Compile DarkNet Models
+Yolo detection boxes helper functions
 ====================
 DarkNet helper functions for yolo and image loading.
 This functions will not be loaded by default.
