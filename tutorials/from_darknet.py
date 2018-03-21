@@ -203,10 +203,10 @@ _, im_h, im_w = img.shape
 probs= []
 boxes = []
 region_layer = net.layers[net.n - 1]
-boxes, probs = nnvm.testing.detection.get_region_boxes(region_layer, im_w, im_h, net.w, net.h,
+boxes, probs = nnvm.testing.yolo2_detection.get_region_boxes(region_layer, im_w, im_h, net.w, net.h,
                        thresh, probs, boxes, 1, tvm_out)
 
-boxes, probs = nnvm.testing.detection.do_nms_sort(boxes, probs,
+boxes, probs = nnvm.testing.yolo2_detection.do_nms_sort(boxes, probs,
                        region_layer.w*region_layer.h*region_layer.n, region_layer.classes, 0.3)
 
 coco_name = 'coco.names'
@@ -221,7 +221,7 @@ with open(coco_name) as f:
 
 names = [x.strip() for x in content]
 
-nnvm.testing.detection.draw_detections(img, region_layer.w*region_layer.h*region_layer.n,
+nnvm.testing.yolo2_detection.draw_detections(img, region_layer.w*region_layer.h*region_layer.n,
                  thresh, boxes, probs, names, region_layer.classes)
 plt.imshow(img.transpose(1,2,0))
 plt.show()

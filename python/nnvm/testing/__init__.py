@@ -8,4 +8,4 @@ from . import mlp
 from . import resnet
 from . import vgg
 from . import darknet
-from . import detection
+from . import yolo2_detection
