@@ -1,0 +1,74 @@
+import nnvm
+import numpy as np
+import tvm
+import topi
+from tvm.contrib import graph_runtime
+from nnvm import symbol as sym
+from nnvm.compiler import graph_util, graph_attr
+from nnvm.testing import ctx_list
+
+def test_ewise_injective():
+    def final_expression(x, y, n):
+        y1 = sym.sqrt(y)
+        p = sym.elemwise_add(x, y1)
+        q = sym.elemwise_add(n, y1)
+        r = sym.elemwise_add(q, y1)
+        x1 = sym.sqrt(x)
+        s = sym.elemwise_add(q, x1)
+        t = sym.elemwise_add(r, s)
+        u = sym.tanh(t)
+        v = sym.elemwise_add(p, u)
+        w = sym.elemwise_add(r, v)
+        i = sym.tanh(s)
+        j = sym.elemwise_add(w, i)
+        k = sym.elemwise_add(j, y1)
+        l = sym.elemwise_add(p, k)
+        return l
+
+
+    x = sym.Variable("x")
+    y = sym.Variable("y")
+    n = sym.Variable("n")
+    z = sym.elemwise_add(x, sym.sqrt(y))
+    i = sym.elemwise_add(n, sym.sqrt(y))
+    p = sym.elemwise_add(i, sym.sqrt(y))
+    q = sym.elemwise_add(i, sym.sqrt(x))
+    r = sym.elemwise_add(p, q)
+    s = sym.tanh(r)
+    t = sym.elemwise_add(z, s)
+    a = sym.elemwise_add(n, sym.sqrt(y))
+    b = sym.elemwise_add(a, sym.sqrt(y))
+    c = sym.elemwise_add(i, sym.sqrt(x))
+    d = sym.elemwise_add(b, t)
+    e = sym.tanh(c)
+    f = sym.elemwise_add(d, e)
+    g = sym.elemwise_add(f, sym.sqrt(y))
+    k = sym.elemwise_add(z, g)
+    dshape = (4,)
+    shape_dict = {"x": dshape}
+    dtype = "float32"
+    target = "llvm"
+
+    g = nnvm.graph.create(k)
+    g2 = nnvm.graph.create(final_expression(x, y, n))
+    graph_attr.set_shape_inputs(g, shape_dict)
+    g1 = g.apply("InferShape").apply("SimplifyInference").apply("CommonSubExpression")
+    # assert graph equals as expected
+    graph_util.check_graph_equal(g1, g2)
+
+    for target, ctx in ctx_list():
+        graph, lib, _ = nnvm.compiler.build(k, target, shape_dict)
+        x_np = np.array([1, 4, 9, 16]).astype("float32")
+        y_np = np.array([4, 4, 4, 4]).astype("float32")
+        n_np = np.array([9, 9, 9, 9]).astype("float32")
+        m = graph_runtime.create(graph, lib, ctx)
+        m.set_input(y=y_np, n=n_np)
+        m.run(x=x_np)
+        out = m.get_output(0, tvm.nd.empty(dshape))
+        np.testing.assert_allclose(
+            out.asnumpy(),  np.array([23, 29, 39, 53]).astype("float32"),
+            atol=1e-5, rtol=1e-5)
+
+
+if __name__ == "__main__":
+    test_ewise_injective()
