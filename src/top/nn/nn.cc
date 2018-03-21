@@ -417,42 +417,77 @@ NNVM_REGISTER_OP(leaky_relu)
 })
 .set_support_level(1);
 
+// prelu
+DMLC_REGISTER_PARAMETER(PReLUParam);
+
+inline uint32_t PReluNumInputs(const NodeAttrs& attrs) {
+  const PReLUParam& param = get<PReLUParam>(attrs.parsed);
+  return (param.slope == 0) ? 2 : 1;
+}
+
+inline std::vector<std::string> PReluInputNames(const NodeAttrs& attrs) {
+  const PReLUParam& param = get<PReLUParam>(attrs.parsed);
+  if (param.slope == 0) {
+    return {"data", "cslope"};
+  } else {
+    return  {"data"};
+  }
+}
+
+inline bool PReluInferShape(const nnvm::NodeAttrs &attrs,
+                            std::vector<TShape> *in_shape,
+                            std::vector<TShape> *out_shape) {
+  const PReLUParam &param = nnvm::get<PReLUParam>(attrs.parsed);
+  TShape dshape = in_shape->at(0);
+  NNVM_ASSIGN_INPUT_SHAPE(attrs, *in_shape, 0, dshape);
+
+  // The case of parametric relu
+  if (param.slope == 0) {
+      CHECK_EQ(dshape.ndim(), 4) << "Input data should be 4D, but got " << dshape.ndim();
+
+      TShape slope_shape = in_shape->at(1);
+      CHECK_EQ(slope_shape.ndim(), 1) << "Input data should be 1D, but got " << slope_shape.ndim();
+      NNVM_ASSIGN_INPUT_SHAPE(attrs, *in_shape, 1, slope_shape);
+  } else {
+      // The case of leaky relu
+      CHECK_EQ(in_shape->size(), 1) <<
+            "Slope is not channelwise, still slope tensor provided of shape" << in_shape->size();
+  }
+
+  TShape oshape(dshape);
+  NNVM_ASSIGN_OUTPUT_SHAPE(attrs, *out_shape, 0, oshape);
+  return true;
+}
+
 NNVM_REGISTER_OP(prelu)
 .describe(R"code(Parametric version of a Rectified Linear Unit.
-It accepts two arguments: an input ``x`` and a weight array ``W``
+It accepts two arguments: an input ``x`` and a channelwise slope ``W``
 and computes the output as :math:`PReLU(x) y = x > 0 ? x : W * x`,
 where :math:`*` is an elementwise multiplication for each sample in the
 
 )code" NNVM_ADD_FILELINE)
 .add_argument("data", "Tensor", "Input data.")
-.add_argument("weight", "Tensor", "Input weights.")
-.set_num_inputs(2)
+.add_argument("cslope", "Tensor", "Input channelwise slope.")
+.add_arguments(PReLUParam::__FIELDS__())
+.set_attr_parser(ParamParser<PReLUParam>)
+.set_attr<FGetAttrDict>("FGetAttrDict", ParamGetAttrDict<PReLUParam>)
+.set_attr<FListInputNames>("FListInputNames", PReluInputNames)
+.set_num_inputs(PReluNumInputs)
 .set_num_outputs(1)
-.set_attr<FInferShape>("FInferShape", ElemwiseShape<2, 1>)
-.set_attr<FInferType>("FInferType", ElemwiseType<2, 1>)
+.set_attr<FInferShape>("FInferShape", PReluInferShape)
 .set_attr<FTVMCompute>(
   "FTVMCompute", [](const NodeAttrs& attrs,
                     const Array<Tensor>& inputs,
                     const Array<Tensor>& out_info) {
-    return Array<Tensor>{ topi::prelu<float>(inputs[0], inputs[1])};
+    const PReLUParam& param = nnvm::get<PReLUParam>(attrs.parsed);
+    if (param.slope != 0) {
+        return Array<Tensor>{ topi::leaky_relu<float>(inputs[0], 0.0, param.slope)};
+    } else {
+        CHECK(param.layout == kNCHW || param.layout == kNHWC) << "Unsupported layout";
+        std::string layout = (param.layout == kNCHW ? "NCHW" : "NHWC");
+        return Array<Tensor>{ topi::prelu<float>(inputs[0], inputs[1], layout)};
+    }
   })
-.set_attr<FGradient>(
-  "FGradient", [](const NodePtr& n,
-                  const std::vector<NodeEntry>& ograds) {
-    // y = prelu(x)
-    // grad = indicator(x > 0) + W * indicator(x < 0)
-    NodeEntry zero = MakeNode("zeros_like", n->attrs.name + "_grad_zero",
-                              {n->inputs[0]});
-    NodeEntry sub0 = MakeNode("greater", n->attrs.name + "_pos_grad",
-                              {n->inputs[0], zero}, {{"exclude", "true"}});
-    NodeEntry sub1 = MakeNode("less", n->attrs.name + "_neg_grad",
-                              {n->inputs[0], zero}, {{"exclude", "true"}});
-    NodeEntry mul0 = MakeNode("elemwise_mul", n->attrs.name + "_neg_mul_0",
-                              {sub1, n->inputs[1]});
-    return std::vector<NodeEntry>{
-      MakeNode("elemwise_add", n->attrs.name + "_add_grad", {sub0, mul0})
-    };
-})
 .set_support_level(1);
 
 DMLC_REGISTER_PARAMETER(PadParam);
