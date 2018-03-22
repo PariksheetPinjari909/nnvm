@@ -28,13 +28,13 @@ nnvm::Graph PrecomputePrune(nnvm::Graph src) {
   // number of edges that are not variable
   int non_var_edge = 0;
   std::string expressn = "";
-  std::function<std::string(const NodeEntry& e, std::string)>find_cummulative_expression
-    = [&find_cummulative_expression] (const NodeEntry& e, std::string expressn)->std::string {
-    if (e.node->is_variable()) {
-      expressn += e.node->attrs.name;
+  std::function<std::string(const NodeEntry& node, std::string)>find_cummulative_expression
+    = [&find_cummulative_expression] (const NodeEntry& node, std::string expressn)->std::string {
+    if (node.node->is_variable()) {
+      expressn += node.node->attrs.name;
     } else {
-      expressn += e.node->op()->name;
-      for (const auto& e : e.node->inputs) {
+      expressn += node.node->op()->name;
+      for (const auto& e : node.node->inputs) {
         expressn = find_cummulative_expression(e, expressn);
       }
     }

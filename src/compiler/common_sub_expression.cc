@@ -14,14 +14,14 @@ nnvm::Graph CommonSubExpression(nnvm::Graph src) {
   std::vector<NodeEntry> commonNodeList;
   std::unordered_map<std::string, int> unique_expressn;
   std::string expressn = "";
-  std::function<std::string(const NodeEntry& e, std::string)>find_cummulative_expression
+  std::function<std::string(const NodeEntry& node, std::string)>find_cummulative_expression
     = [&find_cummulative_expression, &commonNodeList, &unique_expressn]
-    (const NodeEntry& e, std::string expressn)->std::string {
+    (const NodeEntry& node, std::string expressn)->std::string {
     std::string tempExprssn = "";
-    if (e.node->is_variable()) {
-      tempExprssn += e.node->attrs.name;
+    if (node.node->is_variable()) {
+      tempExprssn += node.node->attrs.name;
     } else {
-      for (auto& e : e.node->inputs) {
+      for (auto& e : node.node->inputs) {
         tempExprssn = find_cummulative_expression(e, tempExprssn);
         // Replace already commoned expression with its global index
         if (unique_expressn.count(tempExprssn)) {
@@ -32,7 +32,7 @@ nnvm::Graph CommonSubExpression(nnvm::Graph src) {
         tempExprssn = "";
       }
 
-      tempExprssn = e.node->op()->name + expressn;
+      tempExprssn = node.node->op()->name + expressn;
     }
     return tempExprssn;
   };
