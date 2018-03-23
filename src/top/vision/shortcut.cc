@@ -13,7 +13,7 @@
 namespace nnvm {
 namespace top {
 
-NNVM_REGISTER_OP(shortcut)
+NNVM_REGISTER_OP(darknet_shortcut)
 .describe(R"code(Shortcut layer (sometimes called Shortcut Connections).
 Shortcut connections are the connections which skip one or more layers.
 )code" NNVM_ADD_FILELINE)

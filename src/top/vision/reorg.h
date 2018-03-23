@@ -14,29 +14,37 @@
 namespace nnvm {
 namespace top {
 
-template <typename AttrType, bool (*is_none)(const AttrType &),
-          bool (*assign)(AttrType *, const AttrType &), bool reverse_infer,
-          std::string (*attr_string)(const AttrType &), int n_in = -1,
+template <typename AttrType,
+          bool (*is_none)(const AttrType &),
+          bool (*assign)(AttrType *,
+          const AttrType &),
+          bool reverse_infer,
+          std::string (*attr_string)(const AttrType &),
+          int n_in = -1,
           int n_out = -1>
 inline bool ReorgAttr(const nnvm::NodeAttrs &attrs,
                       std::vector<AttrType> *in_attrs,
-                      std::vector<AttrType> *out_attrs, const AttrType &none) {
+                      std::vector<AttrType> *out_attrs,
+                      const AttrType &none) {
   AttrType dattr = none;
   size_t in_size = in_attrs->size();
   size_t out_size = out_attrs->size();
-  if (n_in != -1)
+  if (n_in != -1) {
     in_size = static_cast<size_t>(n_in);
-  if (n_out != -1)
+  }
+  if (n_out != -1) {
     out_size = static_cast<size_t>(n_out);
+  }
 
   auto deduce = [&](std::vector<AttrType> *vec, size_t size, const char *name) {
     for (size_t i = 0; i < size; ++i) {
-      if (i == 0)
+      if (i == 0) {
         CHECK(assign(&dattr, (*vec)[i]))
             << "Incompatible attr in node " << attrs.name << " at " << i
             << "-th " << name << ": "
             << "expected " << attr_string(dattr) << ", got "
             << attr_string((*vec)[i]);
+      }
     }
   };
   deduce(in_attrs, in_size, "input");
@@ -52,13 +60,15 @@ inline bool ReorgAttr(const nnvm::NodeAttrs &attrs,
   };
   write(out_attrs, out_size, "output");
 
-  if (is_none(dattr))
+  if (is_none(dattr)) {
     return false;
+  }
   return true;
 }
 
 template <int n_in, int n_out>
-inline bool ReorgShape(const NodeAttrs &attrs, std::vector<TShape> *in_attrs,
+inline bool ReorgShape(const NodeAttrs &attrs,
+                       std::vector<TShape> *in_attrs,
                        std::vector<TShape> *out_attrs) {
   if (n_in != -1) {
     CHECK_EQ(in_attrs->size(), static_cast<size_t>(n_in))
@@ -73,7 +83,8 @@ inline bool ReorgShape(const NodeAttrs &attrs, std::vector<TShape> *in_attrs,
 }
 
 template <int n_in, int n_out>
-inline bool ReorgType(const NodeAttrs &attrs, std::vector<int> *in_attrs,
+inline bool ReorgType(const NodeAttrs &attrs,
+                      std::vector<int> *in_attrs,
                       std::vector<int> *out_attrs) {
   if (n_in != -1) {
     CHECK_EQ(in_attrs->size(), static_cast<size_t>(n_in))

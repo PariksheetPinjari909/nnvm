@@ -191,7 +191,7 @@ def _darknet_conv2d_transpose(inputs, attrs):
 
 def _darknet_shortcut(inputs, attrs):
     """Process the shortcut operation."""
-    op_name, new_attrs = 'shortcut', {}
+    op_name, new_attrs = 'darknet_shortcut', {}
     sym = _darknet_get_nnvm_op(op_name)(*inputs, **new_attrs)
     out_name = sym.list_output_names()[0].replace('_output', '')
     if 'activation' in attrs:

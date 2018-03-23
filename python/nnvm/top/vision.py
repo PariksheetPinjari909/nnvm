@@ -8,13 +8,13 @@ import tvm
 from . import registry as reg
 from .registry import OpPattern
 
-@reg.register_compute("shortcut")
+@reg.register_compute("darknet_shortcut")
 def compute_shortcut(attrs, inputs, _):
     """Compute definition of shortcut"""
     out = topi.vision.shortcut(inputs[0], inputs[1])
     return out
 
-@reg.register_schedule("shortcut")
+@reg.register_schedule("darknet_shortcut")
 def schedule_shortcut(attrs, outs, target):
     """Schedule definition of shortcut"""
     with tvm.target.create(target):
