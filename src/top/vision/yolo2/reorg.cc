@@ -6,8 +6,8 @@
 #include <nnvm/node.h>
 #include <nnvm/op_attr_types.h>
 #include <nnvm/top/nn.h>
-#include "../op_common.h"
-#include "../elemwise_op_common.h"
+#include "../../op_common.h"
+#include "../../elemwise_op_common.h"
 #include "reorg.h"
 
 namespace nnvm {

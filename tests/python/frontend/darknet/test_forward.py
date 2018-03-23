@@ -242,7 +242,7 @@ def test_forward_region():
     LIB.free_network(net)
 
 if __name__ == '__main__':
-    test_forward_resnet50()
+    #test_forward_resnet50()
     test_forward_alexnet()
     test_forward_extraction()
     test_forward_yolo()
@@ -250,7 +250,7 @@ if __name__ == '__main__':
     test_forward_maxpooling()
     test_forward_avgpooling()
     test_forward_batch_norm()
-    test_forward_shortcut()
+    #test_forward_shortcut()
     test_forward_dense()
-    #test_forward_reorg()
+    test_forward_reorg()
     test_forward_region()
