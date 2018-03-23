@@ -1,7 +1,6 @@
 /*!
  *  Copyright (c) 2018 by Contributors
  * \file reorg.cc
- * \brief Property def of pooling operators.
  */
 #include <nnvm/op.h>
 #include <nnvm/node.h>
