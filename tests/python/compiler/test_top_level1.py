@@ -95,7 +95,7 @@ def test_prelu_nchw():
 def test_prelu_nhwc():
     x = sym.Variable("x")
     a = sym.Variable("a")
-    y = sym.prelu(data=x, cslope=a, layout='NHWC')
+    y = sym.prelu(data=x, cslope=a, axis=3)
 
     def forward(x, a):
         out = np.zeros(x.shape)

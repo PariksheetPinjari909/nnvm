@@ -444,6 +444,8 @@ inline bool PReluInferShape(const nnvm::NodeAttrs &attrs,
   // The case of parametric relu
   if (param.slope == 0) {
       CHECK_EQ(dshape.ndim(), 4) << "Input data should be 4D, but got " << dshape.ndim();
+      CHECK(param.axis < dshape.size()) <<
+            "Wrong axis ("  << param.axis << ")value. ";
 
       TShape slope_shape = in_shape->at(1);
       CHECK_EQ(slope_shape.ndim(), 1) << "Input data should be 1D, but got " << slope_shape.ndim();
@@ -483,9 +485,7 @@ where :math:`*` is an elementwise multiplication for each sample in the
     if (param.slope != 0) {
         return Array<Tensor>{ topi::leaky_relu<float>(inputs[0], 0.0, param.slope)};
     } else {
-        CHECK(param.layout == kNCHW || param.layout == kNHWC) << "Unsupported layout";
-        std::string layout = (param.layout == kNCHW ? "NCHW" : "NHWC");
-        return Array<Tensor>{ topi::prelu<float>(inputs[0], inputs[1], layout)};
+        return Array<Tensor>{ topi::prelu<float>(inputs[0], inputs[1], param.axis)};
     }
   })
 .set_support_level(1);
