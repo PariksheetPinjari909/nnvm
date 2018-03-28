@@ -420,20 +420,6 @@ NNVM_REGISTER_OP(leaky_relu)
 // prelu
 DMLC_REGISTER_PARAMETER(PReLUParam);
 
-inline uint32_t PReluNumInputs(const NodeAttrs& attrs) {
-  const PReLUParam& param = get<PReLUParam>(attrs.parsed);
-  return (param.slope == 0) ? 2 : 1;
-}
-
-inline std::vector<std::string> PReluInputNames(const NodeAttrs& attrs) {
-  const PReLUParam& param = get<PReLUParam>(attrs.parsed);
-  if (param.slope == 0) {
-    return {"data", "cslope"};
-  } else {
-    return  {"data"};
-  }
-}
-
 inline bool PReluInferShape(const nnvm::NodeAttrs &attrs,
                             std::vector<TShape> *in_shape,
                             std::vector<TShape> *out_shape) {
@@ -442,19 +428,14 @@ inline bool PReluInferShape(const nnvm::NodeAttrs &attrs,
   NNVM_ASSIGN_INPUT_SHAPE(attrs, *in_shape, 0, dshape);
 
   // The case of parametric relu
-  if (param.slope == 0) {
-      CHECK_EQ(dshape.ndim(), 4) << "Input data should be 4D, but got " << dshape.ndim();
-      CHECK(param.axis < dshape.size()) <<
-            "Wrong axis ("  << param.axis << ")value. ";
+  CHECK_EQ(dshape.ndim(), 4) << "Input data should be 4D, but got " << dshape.ndim();
+  CHECK(size_t(param.axis) < dshape.Size()) <<
+        "Wrong axis ("  << param.axis << ")value. ";
 
-      TShape slope_shape = in_shape->at(1);
-      CHECK_EQ(slope_shape.ndim(), 1) << "Input data should be 1D, but got " << slope_shape.ndim();
-      NNVM_ASSIGN_INPUT_SHAPE(attrs, *in_shape, 1, slope_shape);
-  } else {
-      // The case of leaky relu
-      CHECK_EQ(in_shape->size(), 1) <<
-            "Slope is not channelwise, still slope tensor provided of shape" << in_shape->size();
-  }
+  TShape slope_shape = in_shape->at(1);
+  CHECK_EQ(slope_shape.ndim(), 1) <<
+        "Slope is channelwise, slope tensor provided of dimension " << slope_shape.ndim();
+  NNVM_ASSIGN_INPUT_SHAPE(attrs, *in_shape, 1, slope_shape);
 
   TShape oshape(dshape);
   NNVM_ASSIGN_OUTPUT_SHAPE(attrs, *out_shape, 0, oshape);
@@ -472,21 +453,18 @@ where :math:`*` is an elementwise multiplication for each sample in the
 .add_argument("cslope", "Tensor", "Input channelwise slope.")
 .add_arguments(PReLUParam::__FIELDS__())
 .set_attr_parser(ParamParser<PReLUParam>)
-.set_attr<FGetAttrDict>("FGetAttrDict", ParamGetAttrDict<PReLUParam>)
-.set_attr<FListInputNames>("FListInputNames", PReluInputNames)
-.set_num_inputs(PReluNumInputs)
+.set_num_inputs(2)
 .set_num_outputs(1)
 .set_attr<FInferShape>("FInferShape", PReluInferShape)
+.set_attr<FListInputNames>("FListInputNames", [](const NodeAttrs& attrs) {
+    return std::vector<std::string>{"data", "cslope"};
+  })
 .set_attr<FTVMCompute>(
   "FTVMCompute", [](const NodeAttrs& attrs,
                     const Array<Tensor>& inputs,
                     const Array<Tensor>& out_info) {
     const PReLUParam& param = nnvm::get<PReLUParam>(attrs.parsed);
-    if (param.slope != 0) {
-        return Array<Tensor>{ topi::leaky_relu<float>(inputs[0], 0.0, param.slope)};
-    } else {
-        return Array<Tensor>{ topi::prelu<float>(inputs[0], inputs[1], param.axis)};
-    }
+    return Array<Tensor>{ topi::prelu<float>(inputs[0], inputs[1], param.axis)};
   })
 .set_support_level(1);
 

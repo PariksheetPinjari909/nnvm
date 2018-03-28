@@ -102,12 +102,8 @@ struct LeakyReLUParam : public dmlc::Parameter<LeakyReLUParam> {
 };
 
 struct PReLUParam : public dmlc::Parameter<PReLUParam> {
-  double slope;
   int axis;
   DMLC_DECLARE_PARAMETER(PReLUParam) {
-    DMLC_DECLARE_FIELD(slope).set_lower_bound(0.0).set_default(0.0)
-        .describe("slope coefficient for the negative half axis."
-                  " Set this for non-channelwise slope");
     DMLC_DECLARE_FIELD(axis).set_default(1)
       .describe("Specify which shape axis the channel is specified.");
   }

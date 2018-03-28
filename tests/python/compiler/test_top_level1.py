@@ -70,16 +70,7 @@ def test_prelu_nchw():
     y = sym.prelu(data=x, cslope=a)
 
     def forward(x, a):
-        out = np.zeros(x.shape)
-        for b in range (x.shape[0]):
-            for c in range (x.shape[1]):
-                for h in range (x.shape[2]):
-                    for w in range (x.shape[3]):
-                        if x[b][c][h][w] < 0:
-                           out[b][c][h][w] = x[b][c][h][w] * a[c]
-                        else:
-                           out[b][c][h][w] = x[b][c][h][w]
-        return out
+        return (x < 0) * (x * a.reshape(3, 1, 1)) + (x>=0) * x
 
     dtype = "float32"
     dshape_x = (1, 3, 32, 32)
@@ -98,16 +89,7 @@ def test_prelu_nhwc():
     y = sym.prelu(data=x, cslope=a, axis=3)
 
     def forward(x, a):
-        out = np.zeros(x.shape)
-        for b in range (x.shape[0]):
-            for h in range (x.shape[1]):
-                for w in range (x.shape[2]):
-                    for c in range (x.shape[3]):
-                        if x[b][h][w][c] < 0:
-                           out[b][h][w][c] = x[b][h][w][c] * a[c]
-                        else:
-                           out[b][h][w][c] = x[b][h][w][c]
-        return out
+        return (x < 0) * (x * a.reshape(1, 1, 3)) + (x>=0) * x
 
     dtype = "float32"
     dshape_x = (1, 32, 32, 3)
@@ -116,21 +98,6 @@ def test_prelu_nhwc():
     inputs = {
         'x': (dshape_x, x),
         'a': (dshape_w, a)
-    }
-
-    helper(y, inputs, dtype, forward)
-
-def test_prelu_leaky():
-    x = sym.Variable("x")
-    y = sym.prelu(data=x, slope=0.1)
-
-    def forward(x):
-        return (x < 0) * x * 0.1 + (x > 0) * x
-
-    dtype = "float32"
-    dshape_x = (1, 3, 32, 32)
-    inputs = {
-        'x': (dshape_x, x),
     }
 
     helper(y, inputs, dtype, forward)
@@ -408,7 +375,6 @@ if __name__ == "__main__":
     test_relu()
     test_prelu_nchw()
     test_prelu_nhwc()
-    test_prelu_leaky()
     test_sym_scalar_pow()
     test_scalar_sym_pow()
     test_exp()
