@@ -13,11 +13,12 @@ from nnvm.testing.darknet import __darknetffi__
 import nnvm.compiler
 import tvm
 import sys
-
+import urllib
 if sys.version_info >= (3,):
     import urllib.request as urllib2
 else:
-    import urllib
+    import urllib2
+
 def _download(url, path, overwrite=False, sizecompare=False):
     ''' Download from internet'''
     if os.path.isfile(path) and not overwrite:
@@ -242,7 +243,7 @@ def test_forward_region():
     LIB.free_network(net)
 
 if __name__ == '__main__':
-    #test_forward_resnet50()
+    test_forward_resnet50()
     test_forward_alexnet()
     test_forward_extraction()
     test_forward_yolo()
@@ -250,7 +251,7 @@ if __name__ == '__main__':
     test_forward_maxpooling()
     test_forward_avgpooling()
     test_forward_batch_norm()
-    #test_forward_shortcut()
+    test_forward_shortcut()
     test_forward_dense()
     test_forward_reorg()
     test_forward_region()

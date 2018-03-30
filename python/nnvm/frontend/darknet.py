@@ -191,8 +191,28 @@ def _darknet_conv2d_transpose(inputs, attrs):
 
 def _darknet_shortcut(inputs, attrs):
     """Process the shortcut operation."""
-    op_name, new_attrs = 'darknet_shortcut', {}
-    sym = _darknet_get_nnvm_op(op_name)(*inputs, **new_attrs)
+    op_name, new_attrs = 'elemwise_add', {}
+    input_0 = inputs[0]
+    input_1 = inputs[1]
+    input_0_channel = int(attrs['out_channel'])
+    input_1_channel = int(attrs['add_out_channel'])
+    input_0_size = int(attrs['out_size'])
+    input_1_size = int(attrs['add_out_size'])
+
+    if (input_0_size > input_1_size) :
+        scale = int(input_0_size/input_1_size)
+        input_1 = _sym.upsampling(input_1, scale=scale, name="_upsampling")
+    elif (input_0_size < input_1_size) :
+        stride = int(input_1_size/input_0_size)
+        input_1 = _sym.avg_pool2d(input_1, pool_size=(1,1),
+                strides=(stride,stride), padding=(0,0), name="_downsampling")
+
+    if (input_0_channel != input_1_channel) :
+        pad_channel = input_0_channel - input_1_channel
+        input_1 = _sym.pad(input_1, pad_width=((0, 0), (0, pad_channel), (0, 0), (0,0)), pad_value=0.)
+
+    new_inputs = _as_list([input_0, input_1])
+    sym = _darknet_get_nnvm_op(op_name)(*new_inputs, **new_attrs)
     out_name = sym.list_output_names()[0].replace('_output', '')
     if 'activation' in attrs:
         new_attrs['activation'] = attrs['activation']
@@ -312,7 +332,7 @@ _DARKNET_CONVERT_MAP = {
     'REORG'           : _darknet_reorg,
     'REGION'          : _darknet_region,
     'ACTIVATION'      : _darknet_activations,
-    'SHORTCUT'        : _darknet_op_not_support,
+    'SHORTCUT'        : _darknet_shortcut,
     'DETECTION'       : _darknet_op_not_support,
     'CROP'            : _darknet_op_not_support,
     'COST'            : _darknet_op_not_support,
@@ -501,7 +521,12 @@ def _get_darknet_attrs(net, layer_num):
         attr.update({'use_flatten' : True})
 
     elif LAYERTYPE.SHORTCUT == layer.type:
+        add_layer = net.layers[layer.index]
         attr.update({'activation' : (layer.activation)})
+        attr.update({'out_channel' : (layer.out_c)})
+        attr.update({'out_size' : (layer.out_h)})
+        attr.update({'add_out_channel' : (add_layer.out_c)})
+        attr.update({'add_out_size' : (add_layer.out_h)})
 
     elif LAYERTYPE.ROUTE == layer.type:
         pass
