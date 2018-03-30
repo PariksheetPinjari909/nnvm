@@ -200,9 +200,11 @@ def _darknet_shortcut(inputs, attrs):
     input_1_size = int(attrs['add_out_size'])
 
     if input_0_size > input_1_size:
+        """upsample required to match operand size"""
         scale = int(input_0_size/input_1_size)
         input_1 = _sym.upsampling(input_1, scale=scale, name="_upsampling")
     elif input_0_size < input_1_size:
+        """downsample required to match operand size"""
         stride = int(input_1_size/input_0_size)
         input_1 = _sym.avg_pool2d(input_1, pool_size=(1, 1),
                                   strides=(stride, stride), padding=(0, 0), name="_downsampling")
