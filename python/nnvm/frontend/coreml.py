@@ -77,6 +77,7 @@ def ConvolutionLayerParams(op, insym, symtab):
     return ret
 
 def BatchnormLayerParams(op, insym, symtab):
+    """Batchnorm layer params."""
     # this changes the symbol
     if op.instanceNormalization:
         raise NotImplementedError("instance normalization not implemented")
@@ -89,6 +90,7 @@ def BatchnormLayerParams(op, insym, symtab):
         return _sym.batch_norm(data=insym, **params)
 
 def ActivationParams(op, insym, symtab):
+    """Activation params."""
     whichActivation = op.WhichOneof('NonlinearityType')
     par = getattr(op, whichActivation)
     if whichActivation == 'linear':
@@ -144,6 +146,7 @@ def ScaleLayerParams(op, insym, symtab):
     return ret
 
 def PoolingLayerParams(op, insym, symtab):
+    """Pooling layer params."""
     if op.globalPooling:
         if op.type == 0:
             return _sym.global_max_pool2d(insym)
