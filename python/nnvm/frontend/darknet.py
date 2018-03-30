@@ -199,17 +199,18 @@ def _darknet_shortcut(inputs, attrs):
     input_0_size = int(attrs['out_size'])
     input_1_size = int(attrs['add_out_size'])
 
-    if (input_0_size > input_1_size) :
+    if input_0_size > input_1_size:
         scale = int(input_0_size/input_1_size)
         input_1 = _sym.upsampling(input_1, scale=scale, name="_upsampling")
-    elif (input_0_size < input_1_size) :
+    elif input_0_size < input_1_size:
         stride = int(input_1_size/input_0_size)
-        input_1 = _sym.avg_pool2d(input_1, pool_size=(1,1),
-                strides=(stride,stride), padding=(0,0), name="_downsampling")
+        input_1 = _sym.avg_pool2d(input_1, pool_size=(1, 1),
+                                  strides=(stride, stride), padding=(0, 0), name="_downsampling")
 
-    if (input_0_channel != input_1_channel) :
+    if input_0_channel != input_1_channel:
         pad_channel = input_0_channel - input_1_channel
-        input_1 = _sym.pad(input_1, pad_width=((0, 0), (0, pad_channel), (0, 0), (0,0)), pad_value=0.)
+        input_1 = _sym.pad(input_1, pad_width=((0, 0), (0, pad_channel), (0, 0), (0, 0)),
+                           pad_value=0.)
 
     new_inputs = _as_list([input_0, input_1])
     sym = _darknet_get_nnvm_op(op_name)(*new_inputs, **new_attrs)
