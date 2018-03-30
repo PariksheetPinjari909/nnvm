@@ -131,6 +131,7 @@ def ActivationParams(op, insym, symtab):
         betasym = symtab.new_const(beta)
         return _sym.broadcast_mul(_sym.log(_sym.broadcast_add(
             _sym.exp(insym), betasym)), alphasym)
+    raise NotImplementedError(whichActivation + ' not implemented')
 
 def ScaleLayerParams(op, insym, symtab):
     """Scale layer params."""
