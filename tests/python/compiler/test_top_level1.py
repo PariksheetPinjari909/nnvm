@@ -67,7 +67,7 @@ def test_relu():
 def test_prelu_nchw():
     x = sym.Variable("x")
     a = sym.Variable("a")
-    y = sym.prelu(data=x, cslope=a)
+    y = sym.prelu(data=x, alpha=a)
 
     def forward(x, a):
         return (x < 0) * (x * a.reshape(3, 1, 1)) + (x>=0) * x
@@ -86,7 +86,7 @@ def test_prelu_nchw():
 def test_prelu_nhwc():
     x = sym.Variable("x")
     a = sym.Variable("a")
-    y = sym.prelu(data=x, cslope=a, axis=3)
+    y = sym.prelu(data=x, alpha=a, axis=3)
 
     def forward(x, a):
         return (x < 0) * (x * a.reshape(1, 1, 3)) + (x>=0) * x

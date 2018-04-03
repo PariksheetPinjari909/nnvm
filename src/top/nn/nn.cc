@@ -444,20 +444,20 @@ inline bool PReluInferShape(const nnvm::NodeAttrs &attrs,
 
 NNVM_REGISTER_OP(prelu)
 .describe(R"code(Parametric version of a Rectified Linear Unit.
-It accepts two arguments: an input ``x`` and a channelwise slope ``W``
-and computes the output as :math:`PReLU(x) y = x > 0 ? x : W * x`,
-where :math:`*` is an elementwise multiplication for each sample in the
+It accepts two arguments: an input ``x`` and a channelwise slope ``alpha``
+and computes the output as :math:`PReLU(x) y = x > 0 ? x : alpha * x`,
+where :math:`*` is an channelwise multiplication for each sample in the
 
 )code" NNVM_ADD_FILELINE)
 .add_argument("data", "Tensor", "Input data.")
-.add_argument("cslope", "Tensor", "Input channelwise slope.")
+.add_argument("alpha", "Tensor", "Input channelwise alpha.")
 .add_arguments(PReLUParam::__FIELDS__())
 .set_attr_parser(ParamParser<PReLUParam>)
 .set_num_inputs(2)
 .set_num_outputs(1)
 .set_attr<FInferShape>("FInferShape", PReluInferShape)
 .set_attr<FListInputNames>("FListInputNames", [](const NodeAttrs& attrs) {
-    return std::vector<std::string>{"data", "cslope"};
+    return std::vector<std::string>{"data", "alpha"};
   })
 .set_attr<FTVMCompute>(
   "FTVMCompute", [](const NodeAttrs& attrs,
@@ -466,7 +466,7 @@ where :math:`*` is an elementwise multiplication for each sample in the
     const PReLUParam& param = nnvm::get<PReLUParam>(attrs.parsed);
     return Array<Tensor>{ topi::prelu<float>(inputs[0], inputs[1], param.axis)};
   })
-.set_support_level(1);
+.set_support_level(4);
 
 DMLC_REGISTER_PARAMETER(PadParam);
 
