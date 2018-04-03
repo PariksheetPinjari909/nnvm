@@ -76,11 +76,10 @@ def test_prelu_nchw():
     dshape_x = (1, 3, 32, 32)
     dshape_w = (3,)
 
-    inputs = {
-        'x': (dshape_x, x),
-        'a': (dshape_w, a)
-    }
-
+    inputs = [
+        ('x', dshape_x, x),
+        ('a', dshape_w, a)
+    ]
     helper(y, inputs, dtype, forward)
 
 def test_prelu_nhwc():
@@ -95,10 +94,11 @@ def test_prelu_nhwc():
     dshape_x = (1, 32, 32, 3)
     dshape_w = (3,)
 
-    inputs = {
-        'x': (dshape_x, x),
-        'a': (dshape_w, a)
-    }
+    inputs = [
+        ('x', dshape_x, x),
+        ('a', dshape_w, a)
+    ]
+
 
     helper(y, inputs, dtype, forward)
 
