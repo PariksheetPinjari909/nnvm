@@ -429,12 +429,18 @@ inline bool PReluInferShape(const nnvm::NodeAttrs &attrs,
 
   // The case of parametric relu
   CHECK_EQ(dshape.ndim(), 4) << "Input data should be 4D, but got " << dshape.ndim();
-  CHECK(size_t(param.axis) < dshape.Size()) <<
-        "Wrong axis ("  << param.axis << ")value. ";
+  CHECK(size_t(param.axis) < dshape.Size())
+      << "Wrong axis ("  << param.axis << ")value.";
 
   TShape slope_shape = in_shape->at(1);
-  CHECK_EQ(slope_shape.ndim(), 1) <<
-        "Slope is channelwise, slope tensor provided of dimension " << slope_shape.ndim();
+  CHECK_EQ(slope_shape.ndim(), 1)
+         << "Slope is channelwise, slope tensor provided of dimension "
+         << slope_shape.ndim();
+
+  CHECK(slope_shape[0] == dshape[param.axis])
+      << "Wrong slope shape received " << slope_shape[0]
+      << " expected = " << dshape[param.axis];
+
   NNVM_ASSIGN_INPUT_SHAPE(attrs, *in_shape, 1, slope_shape);
 
   TShape oshape(dshape);
