@@ -69,6 +69,52 @@ def test_ewise_injective():
             out.asnumpy(),  np.array([23, 29, 39, 53]).astype("float32"),
             atol=1e-5, rtol=1e-5)
 
+def test_ops_withdiffparams():
+    def final_expression(x, y):
+        y1 = sym.sqrt(y)
+        p = sym.elemwise_add(x, y1)
+        q = sym.leaky_relu(p, alpha = 0.3)
+        r = sym.leaky_relu(p, alpha = 0.2)
+        x1 = sym.sqrt(x)
+        s = sym.elemwise_add(r, x1)
+        t = sym.elemwise_add(s, p)
+        v = sym.elemwise_add(q, t)
+        return v
+
+
+    x = sym.Variable("x")
+    y = sym.Variable("y")
+    s = sym.elemwise_add(x , sym.sqrt(y))
+    z = sym.leaky_relu(s, alpha = 0.2)
+    t = sym.elemwise_add(z , sym.sqrt(x))
+    u = sym.elemwise_add(t , s)
+    v = sym.elemwise_add(x , sym.sqrt(y))
+    w = sym.leaky_relu(v, alpha = 0.3)
+    k = sym.elemwise_add(w , u)
+    dshape = (4,)
+    shape_dict = {"x": dshape}
+    dtype = "float32"
+    target = "llvm"
+
+    g = nnvm.graph.create(k)
+    g2 = nnvm.graph.create(final_expression(x, y))
+    graph_attr.set_shape_inputs(g, shape_dict)
+    g1 = g.apply("InferShape").apply("SimplifyInference").apply("CommonSubExpression")
+    # assert graph equals as expected
+    graph_util.check_graph_equal(g1, g2)
+
+    for target, ctx in ctx_list():
+        graph, lib, _ = nnvm.compiler.build(k, target, shape_dict)
+        x_np = np.array([1, 4, 9, 16]).astype("float32")
+        y_np = np.array([4, 4, 4, 4]).astype("float32")
+        m = graph_runtime.create(graph, lib, ctx)
+        m.set_input(y=y_np)
+        m.run(x=x_np)
+        out = m.get_output(0, tvm.nd.empty(dshape))
+        np.testing.assert_allclose(
+            out.asnumpy(),  np.array([10, 20, 36, 58]).astype("float32"),
+            atol=1e-5, rtol=1e-5)
 
 if __name__ == "__main__":
     test_ewise_injective()
+    test_ops_withdiffparams()

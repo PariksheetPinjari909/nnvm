@@ -32,6 +32,10 @@ nnvm::Graph CommonSubExpression(nnvm::Graph src) {
         tempExprssn = "";
       }
 
+      // Append all the params name & value also in the expressn
+      for (auto kv : node.node->attrs.dict) {
+        expressn = kv.first + kv.second + expressn;
+      }
       tempExprssn = node.node->op()->name + expressn;
     }
     return tempExprssn;
