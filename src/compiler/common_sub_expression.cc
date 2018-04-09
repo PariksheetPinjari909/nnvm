@@ -18,6 +18,7 @@ nnvm::Graph CommonSubExpression(nnvm::Graph src) {
     = [&find_cummulative_expression, &commonNodeList, &unique_expressn]
     (const NodeEntry& node, std::string expressn)->std::string {
     std::string tempExprssn = "";
+    // If varibale, just get the attribute name
     if (node.node->is_variable()) {
       tempExprssn += node.node->attrs.name;
     } else {
