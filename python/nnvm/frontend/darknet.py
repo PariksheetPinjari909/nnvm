@@ -505,7 +505,7 @@ def _get_darknet_attrs(net, layer_num):
         attr.update({'pad' : str(layer.pad)})
         attr.update({'stride' : str(layer.stride)})
         attr.update({'kernel' : str(layer.size)})
-        max_output = (layer.w - layer.size + 2 * layer.pad)/layer.stride + 1
+        max_output = (layer.w - layer.size + 2 * layer.pad)/float(layer.stride) + 1
         if max_output < layer.out_w:
             extra_pad = (layer.out_w - max_output)*layer.stride
             attr.update({'extra_pad_size' : int(extra_pad)})
