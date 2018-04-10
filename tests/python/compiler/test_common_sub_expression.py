@@ -69,7 +69,7 @@ def test_ewise_injective():
             out.asnumpy(),  np.array([23, 29, 39, 53]).astype("float32"),
             atol=1e-5, rtol=1e-5)
 
-def test_ops_withdiffparams():
+def test_ops_with_diffparams():
     def final_expression(x, y):
         y1 = sym.sqrt(y)
         p = sym.elemwise_add(x, y1)
@@ -117,4 +117,4 @@ def test_ops_withdiffparams():
 
 if __name__ == "__main__":
     test_ewise_injective()
-    test_ops_withdiffparams()
+    test_ops_with_diffparams()
