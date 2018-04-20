@@ -432,16 +432,7 @@ inline bool PReluInferShape(const nnvm::NodeAttrs &attrs,
   CHECK(size_t(param.axis) < dshape.Size())
       << "Wrong axis ("  << param.axis << ")value.";
 
-  TShape slope_shape = in_shape->at(1);
-  CHECK_EQ(slope_shape.ndim(), 1)
-         << "Slope is channelwise, slope tensor provided of dimension "
-         << slope_shape.ndim();
-
-  CHECK(slope_shape[0] == dshape[param.axis])
-      << "Wrong slope shape received " << slope_shape[0]
-      << " expected = " << dshape[param.axis];
-
-  NNVM_ASSIGN_INPUT_SHAPE(attrs, *in_shape, 1, slope_shape);
+  NNVM_ASSIGN_INPUT_SHAPE(attrs, *in_shape, 1, TShape({dshape[param.axis]}));
 
   TShape oshape(dshape);
   NNVM_ASSIGN_OUTPUT_SHAPE(attrs, *out_shape, 0, oshape);
