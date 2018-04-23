@@ -322,7 +322,7 @@ class ThresholdedRelu(OnnxOpConverter):
         alpha = float(attr.get('alpha', 0.0))
         return _sym.relu(inputs[0] - alpha)
 
-    
+
 class ImageScaler(OnnxOpConverter):
 
     @classmethod
@@ -333,6 +333,7 @@ class ImageScaler(OnnxOpConverter):
         scaledChannel = _sym.__mul_scalar__(inputs[0], scalar=channelScale)
         ret = _sym.broadcast_add(scaledChannel, bias)
         return ret
+
 
 def _revert_caffe2_pad(attr):
     """Caffe2 require two times the normal padding."""
