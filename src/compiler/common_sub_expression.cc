@@ -25,7 +25,7 @@ nnvm::Graph CommonSubExpression(nnvm::Graph src) {
       for (auto& e : node.node->inputs) {
         tempExprssn = find_cummulative_expression(e, tempExprssn);
         if (unique_expressn.count(tempExprssn)) {
-          // Replace already commoned node with current one
+          // Replace current one with already commoned node
           e = commonNodeList[unique_expressn.at(tempExprssn)];
           // Replace already commoned expression with its global index
           tempExprssn = std::to_string(unique_expressn.at(tempExprssn));
