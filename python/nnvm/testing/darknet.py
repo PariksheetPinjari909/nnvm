@@ -8,7 +8,6 @@ These are utility functions used for testing and tutorial file.
 """
 from __future__ import division
 import math
-from enum import IntEnum
 import numpy as np
 import cv2
 from cffi import FFI
@@ -91,49 +90,47 @@ def load_image(image, resize_width, resize_height):
     img = load_image_color(image)
     return _letterbox_image(img, resize_width, resize_height)
 
-class LAYERTYPE(IntEnum):
-    """Darknet LAYERTYPE Class constant."""
-    CONVOLUTIONAL = 0
-    DECONVOLUTIONAL = 1
-    CONNECTED = 2
-    MAXPOOL = 3
-    SOFTMAX = 4
-    DETECTION = 5
-    DROPOUT = 6
-    CROP = 7
-    ROUTE = 8
-    COST = 9
-    NORMALIZATION = 10
-    AVGPOOL = 11
-    LOCAL = 12
-    SHORTCUT = 13
-    ACTIVE = 14
-    RNN = 15
-    GRU = 16
-    LSTM = 17
-    CRNN = 18
-    BATCHNORM = 19
-    NETWORK = 20
-    XNOR = 21
-    REGION = 22
-    REORG = 23
-    BLANK = 24
+LAYERTYPE = {'CONVOLUTIONAL': 0,
+             'DECONVOLUTIONAL': 1,
+             'CONNECTED': 2,
+             'MAXPOOL': 3,
+             'SOFTMAX': 4,
+             'DETECTION': 5,
+             'DROPOUT': 6,
+             'CROP': 7,
+             'ROUTE': 8,
+             'COST': 9,
+             'NORMALIZATION': 10,
+             'AVGPOOL': 11,
+             'LOCAL': 12,
+             'SHORTCUT': 13,
+             'ACTIVE': 14,
+             'RNN': 15,
+             'GRU': 16,
+             'LSTM': 17,
+             'CRNN': 18,
+             'BATCHNORM': 19,
+             'NETWORK': 20,
+             'XNOR': 21,
+             'REGION': 22,
+             'REORG': 23,
+             'BLANK': 24,
+            }
 
-class ACTIVATION(IntEnum):
-    """Darknet ACTIVATION Class constant."""
-    LOGISTIC = 0
-    RELU = 1
-    RELIE = 2
-    LINEAR = 3
-    RAMP = 4
-    TANH = 5
-    PLSE = 6
-    LEAKY = 7
-    ELU = 8
-    LOGGY = 9
-    STAIR = 10
-    HARDTAN = 11
-    LHTAN = 12
+ACTIVATION = {'LOGISTIC': 0,
+              'RELU': 1,
+              'RELIE': 2,
+              'LINEAR': 3,
+              'RAMP': 4,
+              'TANH': 5,
+              'PLSE': 6,
+              'LEAKY': 7,
+              'ELU': 8,
+              'LOGGY': 9,
+              'STAIR': 10,
+              'HARDTAN': 11,
+              'LHTAN': 12,
+             }
 
 __darknetffi__ = FFI()
 
