@@ -90,7 +90,7 @@ def load_image(image, resize_width, resize_height):
     img = load_image_color(image)
     return _letterbox_image(img, resize_width, resize_height)
 
-class LAYERTYPE():
+class LAYERTYPE(object):
     """Darknet LAYERTYPE Class constant."""
     CONVOLUTIONAL = 0
     DECONVOLUTIONAL = 1
@@ -118,7 +118,7 @@ class LAYERTYPE():
     REORG = 23
     BLANK = 24
 
-class ACTIVATION():
+class ACTIVATION(object):
     """Darknet ACTIVATION Class constant."""
     LOGISTIC = 0
     RELU = 1

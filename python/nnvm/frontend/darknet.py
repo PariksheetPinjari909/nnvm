@@ -7,7 +7,7 @@ import numpy as np
 import tvm
 from .. import symbol as _sym
 
-class LAYERTYPE():
+class LAYERTYPE(object):
     """Darknet LAYERTYPE Class constant."""
     CONVOLUTIONAL = 0
     DECONVOLUTIONAL = 1
@@ -35,7 +35,7 @@ class LAYERTYPE():
     REORG = 23
     BLANK = 24
 
-class ACTIVATION():
+class ACTIVATION(object):
     """Darknet ACTIVATION Class constant."""
     LOGISTIC = 0
     RELU = 1
