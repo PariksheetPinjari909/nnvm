@@ -7,47 +7,49 @@ import numpy as np
 import tvm
 from .. import symbol as _sym
 
-LAYERTYPE = {'CONVOLUTIONAL': 0,
-             'DECONVOLUTIONAL': 1,
-             'CONNECTED': 2,
-             'MAXPOOL': 3,
-             'SOFTMAX': 4,
-             'DETECTION': 5,
-             'DROPOUT': 6,
-             'CROP': 7,
-             'ROUTE': 8,
-             'COST': 9,
-             'NORMALIZATION': 10,
-             'AVGPOOL': 11,
-             'LOCAL': 12,
-             'SHORTCUT': 13,
-             'ACTIVE': 14,
-             'RNN': 15,
-             'GRU': 16,
-             'LSTM': 17,
-             'CRNN': 18,
-             'BATCHNORM': 19,
-             'NETWORK': 20,
-             'XNOR': 21,
-             'REGION': 22,
-             'REORG': 23,
-             'BLANK': 24,
-            }
+class LAYERTYPE():
+    """Darknet LAYERTYPE Class constant."""
+    CONVOLUTIONAL = 0
+    DECONVOLUTIONAL = 1
+    CONNECTED = 2
+    MAXPOOL = 3
+    SOFTMAX = 4
+    DETECTION = 5
+    DROPOUT = 6
+    CROP = 7
+    ROUTE = 8
+    COST = 9
+    NORMALIZATION = 10
+    AVGPOOL = 11
+    LOCAL = 12
+    SHORTCUT = 13
+    ACTIVE = 14
+    RNN = 15
+    GRU = 16
+    LSTM = 17
+    CRNN = 18
+    BATCHNORM = 19
+    NETWORK = 20
+    XNOR = 21
+    REGION = 22
+    REORG = 23
+    BLANK = 24
 
-ACTIVATION = {'LOGISTIC': 0,
-              'RELU': 1,
-              'RELIE': 2,
-              'LINEAR': 3,
-              'RAMP': 4,
-              'TANH': 5,
-              'PLSE': 6,
-              'LEAKY': 7,
-              'ELU': 8,
-              'LOGGY': 9,
-              'STAIR': 10,
-              'HARDTAN': 11,
-              'LHTAN': 12,
-             }
+class ACTIVATION():
+    """Darknet ACTIVATION Class constant."""
+    LOGISTIC = 0
+    RELU = 1
+    RELIE = 2
+    LINEAR = 3
+    RAMP = 4
+    TANH = 5
+    PLSE = 6
+    LEAKY = 7
+    ELU = 8
+    LOGGY = 9
+    STAIR = 10
+    HARDTAN = 11
+    LHTAN = 12
 
 __all__ = ['from_darknet']
 
@@ -292,13 +294,13 @@ def _darknet_region(inputs, attrs):
 def _darknet_activations(inputs, attrs):
     """Process the activation function."""
     act = _darknet_required_attr(attrs, 'activation')
-    if ACTIVATION['RELU'] == act:
+    if ACTIVATION.RELU == act:
         act_type = 'relu'
-    elif ACTIVATION['TANH'] == act:
+    elif ACTIVATION.TANH == act:
         act_type = 'tanh'
-    elif ACTIVATION['LINEAR'] == act:
+    elif ACTIVATION.LINEAR == act:
         return inputs, None
-    elif ACTIVATION['LEAKY'] == act:
+    elif ACTIVATION.LEAKY == act:
         act_type = 'leaky_relu'
     else:
         _darknet_raise_not_supported('act: ' + act)
@@ -320,33 +322,31 @@ def _darknet_op_not_support(inputs, attrs):
     raise NotImplementedError(err)
 
 _DARKNET_CONVERT_MAP = {
-    'CONVOLUTIONAL'   : _darknet_conv2d,
-    'DECONVOLUTIONAL' : _darknet_conv2d_transpose,
-    'CONNECTED'       : _darknet_dense,
-    'MAXPOOL'         : _darknet_maxpooling,
-    'SOFTMAX'         : _darknet_softmax_output,
-    'DROPOUT'         : _darknet_dropout,
-    'AVGPOOL'         : _darknet_avgpooling,
-    'BATCHNORM'       : _darknet_batch_norm,
-    'RESHAPE'         : _darknet_reshape,
-    'ROUTE'           : _darknet_route,
-    'REORG'           : _darknet_reorg,
-    'REGION'          : _darknet_region,
-    'ACTIVATION'      : _darknet_activations,
-    'SHORTCUT'        : _darknet_shortcut,
-    'DETECTION'       : _darknet_op_not_support,
-    'CROP'            : _darknet_op_not_support,
-    'COST'            : _darknet_op_not_support,
-    'NORMALIZATION'   : _darknet_op_not_support,
-    'LOCAL'           : _darknet_op_not_support,
-    'ACTIVE'          : _darknet_op_not_support,
-    'RNN'             : _darknet_op_not_support,
-    'GRU'             : _darknet_op_not_support,
-    'LSTM'            : _darknet_op_not_support,
-    'CRNN'            : _darknet_op_not_support,
-    'NETWORK'         : _darknet_op_not_support,
-    'XNOR'            : _darknet_op_not_support,
-    'BLANK'           : _darknet_op_not_support,
+    LAYERTYPE.CONVOLUTIONAL   : _darknet_conv2d,
+    LAYERTYPE.DECONVOLUTIONAL : _darknet_conv2d_transpose,
+    LAYERTYPE.CONNECTED       : _darknet_dense,
+    LAYERTYPE.MAXPOOL         : _darknet_maxpooling,
+    LAYERTYPE.SOFTMAX         : _darknet_softmax_output,
+    LAYERTYPE.DROPOUT         : _darknet_dropout,
+    LAYERTYPE.AVGPOOL         : _darknet_avgpooling,
+    LAYERTYPE.BATCHNORM       : _darknet_batch_norm,
+    LAYERTYPE.ROUTE           : _darknet_route,
+    LAYERTYPE.REORG           : _darknet_reorg,
+    LAYERTYPE.REGION          : _darknet_region,
+    LAYERTYPE.SHORTCUT        : _darknet_shortcut,
+    LAYERTYPE.DETECTION       : _darknet_op_not_support,
+    LAYERTYPE.CROP            : _darknet_op_not_support,
+    LAYERTYPE.COST            : _darknet_op_not_support,
+    LAYERTYPE.NORMALIZATION   : _darknet_op_not_support,
+    LAYERTYPE.LOCAL           : _darknet_op_not_support,
+    LAYERTYPE.ACTIVE          : _darknet_op_not_support,
+    LAYERTYPE.RNN             : _darknet_op_not_support,
+    LAYERTYPE.GRU             : _darknet_op_not_support,
+    LAYERTYPE.LSTM            : _darknet_op_not_support,
+    LAYERTYPE.CRNN            : _darknet_op_not_support,
+    LAYERTYPE.NETWORK         : _darknet_op_not_support,
+    LAYERTYPE.XNOR            : _darknet_op_not_support,
+    LAYERTYPE.BLANK           : _darknet_op_not_support,
 }
 
 def _darknet_convert_symbol(op_name, inputs, attrs):
@@ -373,7 +373,7 @@ def _darknet_convert_symbol(op_name, inputs, attrs):
     if op_name in _DARKNET_CONVERT_MAP:
         sym, out_name = _DARKNET_CONVERT_MAP[op_name](inputs, attrs)
     else:
-        _darknet_raise_not_supported('Operator: ' + op_name)
+        _darknet_raise_not_supported('Operator type ' + str(op_name))
     if out_name is  None:
         out_name = sym.list_output_names()[0].replace('_output', '')
     return out_name, sym
@@ -393,10 +393,6 @@ def _read_memory_buffer(shape, data, dtype):
     for i in range(length):
         data_np[i] = data[i]
     return data_np.reshape(shape)
-
-def _get_darknet_layername(layer_type):
-    """Get the layer name from the darknet enums."""
-    return list(LAYERTYPE)[layer_type]
 
 def _get_convolution_weights(layer, opname, params, dtype):
     """Get the convolution layer weights and biases."""
@@ -457,9 +453,7 @@ def _get_darknet_attrs(net, layer_num):
     attr = {}
     use_flatten = True
     layer = net.layers[layer_num]
-    op_name = _get_darknet_layername(layer.type)
-    print("Pariksheet opname=", op_name)
-    if LAYERTYPE['CONVOLUTIONAL'] == layer.type:
+    if LAYERTYPE.CONVOLUTIONAL == layer.type:
         attr.update({'layout' : 'NCHW'})
         attr.update({'pad' : str(layer.pad)})
         attr.update({'num_group' : str(layer.groups)})
@@ -480,7 +474,7 @@ def _get_darknet_attrs(net, layer_num):
     #elif LAYERTYPE.BATCHNORM == layer.type:
     #    attr.update({'flatten' : str('True')})
 
-    elif LAYERTYPE['CONNECTED'] == layer.type:
+    elif LAYERTYPE.CONNECTED == layer.type:
         attr.update({'num_hidden' : str(layer.outputs)})
         attr.update({'activation' : (layer.activation)})
         if layer_num != 0:
@@ -498,7 +492,7 @@ def _get_darknet_attrs(net, layer_num):
             attr.update({'use_batchNorm' : True})
             attr.update({'use_scales' : True})
 
-    elif LAYERTYPE['MAXPOOL'] == layer.type:
+    elif LAYERTYPE.MAXPOOL == layer.type:
         attr.update({'pad' : str(layer.pad)})
         attr.update({'stride' : str(layer.stride)})
         attr.update({'kernel' : str(layer.size)})
@@ -506,7 +500,7 @@ def _get_darknet_attrs(net, layer_num):
         if max_output < layer.out_w:
             extra_pad = (layer.out_w - max_output)*layer.stride
             attr.update({'extra_pad_size' : int(extra_pad)})
-    elif LAYERTYPE['AVGPOOL'] == layer.type:
+    elif LAYERTYPE.AVGPOOL == layer.type:
         attr.update({'pad' : str(layer.pad)})
         if layer.stride == 0:
             attr.update({'stride' : str(1)})
@@ -517,14 +511,14 @@ def _get_darknet_attrs(net, layer_num):
         else:
             attr.update({'kernel' : str(layer.size)})
 
-    elif LAYERTYPE['DROPOUT'] == layer.type:
+    elif LAYERTYPE.DROPOUT == layer.type:
         attr.update({'p' : str(layer.probability)})
 
-    elif LAYERTYPE['SOFTMAX'] == layer.type:
+    elif LAYERTYPE.SOFTMAX == layer.type:
         attr.update({'axis' : 1})
         attr.update({'use_flatten' : True})
 
-    elif LAYERTYPE['SHORTCUT'] == layer.type:
+    elif LAYERTYPE.SHORTCUT == layer.type:
         add_layer = net.layers[layer.index]
         attr.update({'activation' : (layer.activation)})
         attr.update({'out_channel' : (layer.out_c)})
@@ -532,26 +526,26 @@ def _get_darknet_attrs(net, layer_num):
         attr.update({'add_out_channel' : (add_layer.out_c)})
         attr.update({'add_out_size' : (add_layer.out_h)})
 
-    elif LAYERTYPE['ROUTE'] == layer.type:
+    elif LAYERTYPE.ROUTE == layer.type:
         pass
 
-    elif LAYERTYPE['COST'] == layer.type:
+    elif LAYERTYPE.COST == layer.type:
         pass
 
-    elif LAYERTYPE['REORG'] == layer.type:
+    elif LAYERTYPE.REORG == layer.type:
         attr.update({'stride' : layer.stride})
 
-    elif LAYERTYPE['REGION'] == layer.type:
+    elif LAYERTYPE.REGION == layer.type:
         attr.update({'n' : layer.n})
         attr.update({'classes' : layer.classes})
         attr.update({'coords' : layer.coords})
         attr.update({'background' : layer.background})
         attr.update({'softmax' : layer.softmax})
     else:
-        err = "Darknet layer {} is not supported in nnvm.".format(op_name)
+        err = "Darknet layer type {} is not supported in nnvm.".format(layer.type)
         raise NotImplementedError(err)
 
-    return op_name, attr
+    return layer.type, attr
 
 def _get_tvm_params_name(opname, arg_name):
     """Makes the params name for the k,v pair."""
@@ -559,14 +553,14 @@ def _get_tvm_params_name(opname, arg_name):
 
 def _get_darknet_params(layer, opname, tvmparams, dtype='float32'):
     """To parse and get the darknet params."""
-    if LAYERTYPE['CONVOLUTIONAL'] == layer.type:
+    if LAYERTYPE.CONVOLUTIONAL == layer.type:
         _get_convolution_weights(layer, opname, tvmparams, dtype)
 
     #elif LAYERTYPE.BATCHNORM == layer.type:
     #   size = layer.outputs
     #   _get_batchnorm_weights(layer, opname, tvmparams, size, dtype)
 
-    elif LAYERTYPE['CONNECTED'] == layer.type:
+    elif LAYERTYPE.CONNECTED == layer.type:
         _get_connected_weights(layer, opname, tvmparams, dtype)
 
 def _preproc_layer(net, i, sym_array):
@@ -580,20 +574,20 @@ def _preproc_layer(net, i, sym_array):
         sym = sym_array[i - 1]
     skip_layer = False
 
-    if LAYERTYPE['ROUTE'] == layer.type:
+    if LAYERTYPE.ROUTE == layer.type:
         sym = []
         for j in range(layer.n):
             sym.append(sym_array[layer.input_layers[j]])
         if layer.n == 1:
             skip_layer = True
 
-    elif LAYERTYPE['COST'] == layer.type:
+    elif LAYERTYPE.COST == layer.type:
         skip_layer = True
 
-    elif LAYERTYPE['SHORTCUT'] == layer.type:
+    elif LAYERTYPE.SHORTCUT == layer.type:
         sym = [sym, sym_array[layer.index]]
 
-    elif LAYERTYPE['BLANK'] == layer.type:
+    elif LAYERTYPE.BLANK == layer.type:
         skip_layer = True
 
     if skip_layer is True:
