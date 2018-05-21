@@ -24,7 +24,7 @@ sample_repo = 'http://www.fit.vutbr.cz/~imikolov/rnnlm/'
 sample_data_file = 'simple-examples.tgz'
 sample_url = os.path.join(sample_repo, sample_data_file)
 
-ptb_repo = 'https://github.com/joyalbin/dmlc_store/tree/master/trained-models/tf/'
+ptb_repo = 'https://github.com/joyalbin/dmlc_store/raw/master/trained-models/tf/'
 ptb_checkpoint_file = DATA_DIR+'checkpoint'
 ptb_checkpoint_url = os.path.join(ptb_repo, ptb_checkpoint_file)
 ptb_data_file = DATA_DIR+'model.ckpt.data-00000-of-00001'
@@ -35,7 +35,7 @@ ptb_meta_file = DATA_DIR+'model.ckpt.meta'
 ptb_meta_url = os.path.join(ptb_repo, ptb_meta_file)
 ptb_graph_file = DATA_DIR+'run_graph.pbtxt'
 ptb_graph_url = os.path.join(ptb_repo, ptb_graph_file)
-'''
+
 from mxnet.gluon.utils import download
 download(sample_url, DATA_DIR+sample_data_file)
 download(ptb_checkpoint_url, ptb_checkpoint_file)
@@ -47,7 +47,7 @@ download(ptb_graph_url, ptb_graph_file)
 import tarfile
 t = tarfile.open(DATA_DIR+sample_data_file, 'r')
 t.extractall(DATA_DIR)
-'''
+
 
 ###############################################################################
 # Reader
@@ -100,7 +100,6 @@ def ptb_raw_data(data_path=None, prefix="ptb"):
   return train_data, valid_data, test_data, vocabulary, word_to_id, id_2_word
 
 
-
 ###############################################################################
 # Vocabulary
 # ---------------------------------------------
@@ -108,6 +107,7 @@ def ptb_raw_data(data_path=None, prefix="ptb"):
 raw_data = ptb_raw_data(DATA_DIR+'simple-examples/data/')
 train_data, valid_data, test_data, vocabulary, word_to_id, id_to_word = raw_data
 vocab_size = len(word_to_id)
+
 
 ###############################################################################
 # PTB Configuration
@@ -206,6 +206,7 @@ with open("imagenet_tensorflow.json", "w") as fo:
 with open("imagenet_tensorflow.params", "wb") as fo:
     fo.write(nnvm.compiler.save_param_dict(params))
 
+
 ######################################################################
 # Execute on TVM
 # ---------------------------------------------
@@ -214,6 +215,7 @@ from tvm.contrib import graph_runtime
 ctx = tvm.cpu(0)
 out_dtype = 'float32'
 m = graph_runtime.create(graph, lib, ctx)
+
 
 ######################################################################
 # Predition
