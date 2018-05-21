@@ -526,264 +526,124 @@ def _pack():
             extras={'axis':axis},
             ignores=['T', 'N', '_output_shapes', 'axis'])(new_inputs, attr)
     return _impl
-def _infer_out_shapes(inputs, params, transpose=False):
-    """A hack for getting 'channles' or 'units' since onnx don't provide
-    these attributes. We check the shape of weights provided to get the number.
+
+def _infer_out_shapes(inputs, params):
+    """A hack for getting output shape of a node.
     """
     g = _graph.create(inputs)
     shape_dict = {k: v.shape for k, v in params.items()}
     _, out_shapes = graph_util.infer_shape(g, **shape_dict)
     return out_shapes
-def _stridedSlice_():
+
+def _stridedSlice():
     def _impl(inputs, attr, params):
-        new_inputs = [[]]
-        #print("input", params[inputs[1].list_output_names()[0]].asnumpy().size)
-        begin_input = [params[inputs[1].list_output_names()[0]].asnumpy()[i] for i in range(params[inputs[1].list_output_names()[0]].asnumpy().size)]
-        end_input = [params[inputs[2].list_output_names()[0]].asnumpy()[i] for i in range(params[inputs[2].list_output_names()[0]].asnumpy().size)]
-        stride_input = [params[inputs[3].list_output_names()[0]].asnumpy()[i] for i in range(params[inputs[3].list_output_names()[0]].asnumpy().size)]
+        begin_input = [params[inputs[1].list_output_names()[0]].asnumpy()[i] \
+            for i in range(params[inputs[1].list_output_names()[0]].asnumpy().size)]
+        end_input = [params[inputs[2].list_output_names()[0]].asnumpy()[i] \
+            for i in range(params[inputs[2].list_output_names()[0]].asnumpy().size)]
+        stride_input = [params[inputs[3].list_output_names()[0]].asnumpy()[i] \
+            for i in range(params[inputs[3].list_output_names()[0]].asnumpy().size)]
 
-        new_inputs[0] = inputs[0]
+        pop_node = inputs.pop(1)
+        params.pop(pop_node.list_output_names()[0])
+        pop_node = inputs.pop(1)
+        params.pop(pop_node.list_output_names()[0])
+        pop_node = inputs.pop(1)
+        params.pop(pop_node.list_output_names()[0])
+
         inputs_0_shape = _infer_out_shapes(inputs[0], params)
+        input_dim = len(inputs_0_shape[0])
+        stride_dim = len(stride_input)
+        def expand_axis(list_ids, size):
+            for _ in range(len(list_ids), size):
+                list_ids.append(0)
 
-        # change to empy later
-        '''begin = [0 for i in range(len(inputs_0_shape[0]))]
-        end = [0 for i in range(len(inputs_0_shape[0]))]
-        stride = [0 for i in range(len(inputs_0_shape[0]))]'''
-        begin = begin_input
-        end = end_input
-        stride = stride_input
-        #print("input", begin, end, stride)
-        
+        begin = []
+        expand_axis(begin, input_dim)
+        end = []
+        expand_axis(end, input_dim)
+        stride = []
+        expand_axis(stride, input_dim)
         ellipsis_mask_inp = int(attr.get('ellipsis_mask', 0))
         shrink_axis_mask_inp = int(attr.get('shrink_axis_mask', 0))
         end_mask_inp = int(attr.get('end_mask', 0))
         begin_mask_inp = int(attr.get('begin_mask', 0))
-        #new_axis_mask = int(attr.get('new_axis_mask', 0))
-        #new_axis_mask_inp = 0
+        new_axis_mask_inp = int(attr.get('new_axis_mask', 0))
 
-        ellipsis_mask = 0
-        shrink_axis_mask = 0
-        end_mask = 0
-        begin_mask = 0
-        new_axis_mask = 0
-        #print("ellipsis_mask", ellipsis_mask, "shrink_axis_mask", shrink_axis_mask, "end_mask", end_mask, "begin_mask", begin_mask, "new_axis_mask", new_axis_mask)
-
-        #print("inputs_0_shape :", inputs_0_shape)
-        '''return AttrCvt(
-                op_name="strided_slice",
-                extras={'begin':begin, 'end':end, 'stride':stride},
-                #extras={'fill_value':3.0, 'dtype':'int32'},
-                ignores=['ellipsis_mask', 'index_type', 'T', '_output_shapes', 'axis', 'N', 'shrink_axis_mask', 'Index', 'end_mask', 'new_axis_mask', 'begin_mask'])(new_inputs, attr)'''
-        '''begin = inputs.pop(1)
-        end = inputs.pop(2)
-        stride = inputs.pop(3)
-        return get_nnvm_op("strided_slice")(*inputs, begin = begin, end = end, stride = stride)'''
         kShrinkAxis = -1
         kNewAxis = -2
-        input_dim = len(inputs_0_shape[0])
-        stride_dim = len(stride)
+
         ellipsis_seen = False
         num_add_axis_after_ellipsis = 0
         final_shape_gather_indices = []
         for i in range(stride_dim):
-            if (ellipsis_seen and ((1 << i) & new_axis_mask) != 0):
+            if ellipsis_seen and ((1 << i) & new_axis_mask_inp) != 0:
                 num_add_axis_after_ellipsis = num_add_axis_after_ellipsis + 1
 
-            if (((1 << i) & ellipsis_mask) != 0):
+            if ((1 << i) & ellipsis_mask_inp) != 0:
                 ellipsis_seen = True
 
-
-        #// If no ellipsis insert one at the end
-        if (not ellipsis_seen):
-            ellipsis_mask_inp |= (1 << stride_dim);
-            stride_dim = stride_dim + 1;
+        if not ellipsis_seen:
+            ellipsis_mask_inp |= (1 << stride_dim)
+            stride_dim = stride_dim + 1
 
         def transform_ellipsis():
-            full_index = 0;
-            shrink_axis_mask = 0
-            begin_mask = 0
-            end_mask = 0
-            
+            full_index = 0
             for i in range(stride_dim):
-                if ((1 << i) & ellipsis_mask_inp):
-                    #// Expand the ellipsis into the appropriate indices
-                    #// NOTE: this only works because we guaranteed one ellipsis
+                if (1 << i) & ellipsis_mask_inp:
                     next_index = min(input_dim - (stride_dim - i) + 1 + num_add_axis_after_ellipsis,
-                                          input_dim)
-                    #for (; full_index < next_index; full_index++):
+                                     input_dim)
                     for full_index in range(full_index, next_index):
-                        #// new_axis' aren't real axis so you have to skip
-                        begin[full_index] = end[full_index] = 0;
-                        stride[full_index] = 1;
-                        begin_mask = begin_mask | (1 << full_index);
-                        end_mask = end_mask | (1 << full_index);
-                        final_shape_gather_indices.append(full_index);
+                        begin[full_index] = 0
+                        end[full_index] = inputs_0_shape[0][full_index]
+                        stride[full_index] = 1
+                        final_shape_gather_indices.append(full_index)
 
-                elif ((1 << i) & new_axis_mask):
-                    final_shape_gather_indices.append(kNewAxis);
+                elif (1 << i) & new_axis_mask_inp:
+                    final_shape_gather_indices.append(kNewAxis)
                 else:
-                    if (full_index == len(begin)):
+                    if full_index == len(begin):
                         return
 
-                    #// Gather slicing spec into appropriate index
-                    if (len(begin_input) != 0):
+                    if begin_mask_inp & (1 << i):
+                        begin[full_index] = inputs_0_shape[0][full_index] \
+                            if stride_input[i] < 0 else 0
+                    elif begin_input:
                         begin[full_index] = begin_input[i]
 
-                    if (len(end_input) != 0):
+                    if end_mask_inp & (1 << i):
+                        end[full_index] = 0 \
+                            if stride_input[i] < 0 else inputs_0_shape[0][full_index]
+                    elif end_input:
                         end[full_index] = end_input[i]
 
                     stride[full_index] = stride_input[i]
 
-                    if (begin_mask_inp & (1 << i)):
-                        begin_mask |= (1 << full_index);
-
-                    if (end_mask_inp & (1 << i)):
-                        end_mask |= (1 << full_index);
-
-                    #// If shrink, record where to get the dimensionality from (i.e.
-                    #// new_axis creates a fake 1 size dimension. Also remember shrink
-                    #// axis (now in dense form) so we can ignore dense->end below.
-                    if (shrink_axis_mask_inp & (1 << i)):
-                        final_shape_gather_indices.append(kShrinkAxis);
-                        shrink_axis_mask |= (1 << full_index);
+                    if shrink_axis_mask_inp & (1 << i):
+                        final_shape_gather_indices.append(kShrinkAxis)
+                        begin[full_index] = \
+                            inputs_0_shape[0][full_index] \
+                            + begin[full_index] if begin[full_index] < 0 else begin[full_index]
+                        end[full_index] = begin[full_index] + 1
+                        stride[full_index] = 1
                     else:
-                        final_shape_gather_indices.append(full_index);
+                        final_shape_gather_indices.append(full_index)
 
-                    full_index = full_index + 1;
-            return begin_mask, end_mask, shrink_axis_mask
+                    full_index = full_index + 1
 
-        def canonicalindices(sliceindex, stride_i, valid_range, masks, index, size):
-            if (masks[index] != 0):
-                return valid_range[index] if stride_i > 0 else valid_range[(index + 1) & 1]
-            else:
-                slice_fwd = (size + sliceindex) if sliceindex < 0 else sliceindex
-                return valid_range[0] if slice_fwd < valid_range[0] else (valid_range[1] if slice_fwd > valid_range[1] else slice_fwd)
-
-        splitinput = inputs[0]
-        begin_mask, end_mask, shrink_axis_mask = transform_ellipsis()
-        #print("begin_mask, end_mask, shrink_axis_mask", begin_mask, end_mask, shrink_axis_mask)
-        sizes = []
-        #print("input", begin, end, stride)
-        for i in range(len(inputs_0_shape[0])):
-            #print("begin ", begin[i])
-            masks = []
-            end_range = inputs_0_shape[0][i];
-            begin_range = 0;
-            masks.append(begin_mask & (1 << i))
-            masks.append(end_mask & (1 << i))
-            #print("masks ", masks[0], masks[1])
-            begin_and_end_masked = (begin_mask & (1 << i) != 0) and (end_mask & (1 << i) != 0)
-            shrink_i = shrink_axis_mask & (1 << i)
-
-            if (stride[i] < 0):
-                end_range = inputs_0_shape[0][i] - 1;
-                begin_range = -1;
-
-
-            if (len(begin) != 0) and (len(end) != 0):
-                if (shrink_i != 0):
-                    slice_fwd = inputs_0_shape[0][i] + begin[i] if begin[i] < 0 else begin[i];
-                    begin[i] = slice_fwd;
-                    end[i] = slice_fwd + 1;
-                else:
-                    begin[i] = canonicalindices(begin[i], stride[i], [begin_range, end_range], masks, 0, inputs_0_shape[0][i])
-                    end[i] = canonicalindices(end[i], stride[i], [begin_range, end_range], masks, 1, inputs_0_shape[0][i])
-
-            '''print("i ", i)
-            print("begin[i] ", begin[i])
-            print("end[i] ", end[i])'''
-
-            if (len(begin) != 0) and (len(end) != 0):
-                interval = abs(end[i] - begin[i]);
-
-            elif (shrink_i != 0):
-                interval = 1;
-
-            elif (begin_and_end_masked):
-                interval = inputs_0_shape[0][i];
-
-            if (stride[i] < 0):
-                begin[i] = inputs_0_shape[0][i] - begin[i] - 1;
-                end[i] = inputs_0_shape[0][i] - end[i] - 1;
-                stride[i] = -stride[i];
-                splitinput = _sym.reverse(splitinput, axis=i)
-                #print("reveresed ", splitinput)
-            #print("interval ", interval, "stride[i] ", stride[i])
-            sliceinp = int((interval / stride[i]) + (1 if (interval % stride[i]) != 0 else 0))
-            sizes.append(sliceinp)
-
-            # if all the elements in the axis are to be sliced
-            if (begin[i] == 0) and (end[i] == inputs_0_shape[0][i] or end[i] == end_range) and (stride[i] == 1):
-                out = splitinput
-                continue
-
-            remainelem = inputs_0_shape[0][i] - begin[i]
-            #print("remainelem ", remainelem)
-            #end[i] = end[i] + 1 if (end[i] == end_range) and (end[i] != remainelem) else end[i]
-            #print("begin[i] ", begin[i])
-            #print("end[i] ", end[i])
-            #sliceinp = int((max(end[i], inputs_0_shape[0][i]) - begin[i]) / stride[i])
-            #interval = max(end[i], begin[i]) - begin[i]
-
-            #print("sliceinp ", sliceinp)
-            #sliceinp = 1 if sliceinp < 1 else sliceinp
-            #print("sliceinp after:", sliceinp) 
-            assert(sliceinp <= remainelem), "Input is wrong!!!"
-            splitindex = 1
-            if (begin[i] == 0):
-                indices_or_sections = [begin[i] + sliceinp]
-                splitindex = 0
-            elif (sliceinp == remainelem):
-                indices_or_sections = [begin[i]]
-            else:
-                indices_or_sections = [begin[i], begin[i] + sliceinp]
-
-            splitoutput = _sym.split(splitinput, indices_or_sections=indices_or_sections, axis=i)
-            splitinput = splitoutput[splitindex]
-            out = splitoutput[splitindex]
-        #split1 = _sym.split(inputs[0], indices_or_sections = [1, 2], axis=0)
-        #split2 = _sym.split(split1[1], indices_or_sections = [1], axis=1)
-        #return split2[1]
+        transform_ellipsis()
+        out = _sym.strided_slice(inputs[0], begin=begin, end=end, stride=stride)
+        out_0_shape = _infer_out_shapes(out, params)
         final_shape = []
-        axes = []
-        axis_i = 0
         for index in final_shape_gather_indices:
-            if (index >= 0):
-                final_shape.append(sizes[index]);
-            elif (index == kNewAxis):
-                final_shape.append(1);
-                axes.append(axis_i)
-            axis_i = axis_i + 1
-        #print("final_shape ", final_shape, " sizes ", sizes)
-        #outshape = tuple(final_shape)
-        #print("outshape ", outshape)
-        #print("axes ", axes)
-        for axisindex in axes:
-            i = 0
-            out = _sym.expand_dims(out, axis=axisindex + i)
-            i = 1
-        return out
+            if index >= 0:
+                final_shape.append(out_0_shape[0][index])
+            elif index == kNewAxis:
+                final_shape.append(1)
+        outshape = tuple(final_shape)
+        return _sym.reshape(out, shape=outshape)
     return _impl
 
-def _stridedSlice():
-    def _impl(inputs, attr, params):
-        new_inputs = [[]]
-        #print("input", params[inputs[1].list_output_names()[0]].asnumpy().size)
-        begin = [params[inputs[1].list_output_names()[0]].asnumpy()[i] for i in range(params[inputs[1].list_output_names()[0]].asnumpy().size)]
-        end = [params[inputs[2].list_output_names()[0]].asnumpy()[i] for i in range(params[inputs[2].list_output_names()[0]].asnumpy().size)]
-        stride = [params[inputs[3].list_output_names()[0]].asnumpy()[i] for i in range(params[inputs[3].list_output_names()[0]].asnumpy().size)]
-        #print("input", begin, end, stride)
-        new_inputs[0] = inputs[0]
-        return AttrCvt(
-                op_name="strided_slice",
-                extras={'begin':begin, 'end':end, 'stride':stride},
-                #extras={'fill_value':3.0, 'dtype':'int32'},
-                ignores=['ellipsis_mask', 'index_type', 'T', '_output_shapes', 'axis', 'N', 'shrink_axis_mask', 'Index', 'end_mask', 'new_axis_mask', 'begin_mask'])(new_inputs, attr)
-        '''begin = inputs.pop(1)
-        end = inputs.pop(2)
-        stride = inputs.pop(3)
-        return get_nnvm_op("strided_slice")(*inputs, begin = begin, end = end, stride = stride)'''
-    return _impl
 # compatible operators that do NOT require any conversion.
 _identity_list = []
 
@@ -890,9 +750,9 @@ class GraphProto(object):
                 # Assuming only one input graph with type 'Placeholder'
                 self._input_node = node.name
                 self._num_input += 1
-                self._nodes[node.name] = _sym.Variable(name=node.name)
                 self._output_shapes[node.name] = \
                      [tensor_util.TensorShapeProtoToList(shape) for shape in attr['_output_shapes']]
+                self._nodes[node.name] = _sym.Variable(name=node.name, shape=self._output_shapes[node.name][0])
                 input_shapes[self._nodes[node.name]] = self._output_shapes[node.name]
                 attr['_input_shapes'] = input_shapes
             elif node.op == "Const":

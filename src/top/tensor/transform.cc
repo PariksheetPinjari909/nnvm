@@ -843,28 +843,54 @@ inline bool StridedSliceInferShape(const NodeAttrs& attrs,
   const TShape& dshape = (*in_shape)[0];
   if (dshape.ndim() == 0) return false;
   TShape oshape = dshape;
-  dim_t num_axis = param.begin.ndim();
-  CHECK_EQ(dshape.ndim(), static_cast<size_t>(num_axis));
-  int begin;
-  int end;
-  int stride;
-  for (dim_t i = 0; i < num_axis; ++i) {
-      if (param.stride[i] > 0) {
-          begin = param.begin[i];
-          end = param.end[i];
-          stride = param.stride[i];
-      } else {
-          int begin_range = -1;
-          int end_range = dshape[i] - 1;
-          begin = param.begin[i] < 0 ? dshape[i] + param.begin[i] : param.begin[i];
-          end = param.end[i] < 0 ? dshape[i] + param.end[i] : param.end[i];
-          begin = begin < begin_range ? begin_range : begin > end_range ? end_range : begin;
-          end = end < begin_range ? begin_range : end > end_range ? end_range : end;
-          stride = -param.stride[i];
-          begin = dshape[i] - begin - 1;
-          end = std::max((int)dshape[i] - end - 1, begin);
+  dim_t num_axis = dshape.ndim();
+
+  auto expand_axis = [dshape](std::vector<int> list_ids,
+                         size_t src_tensor_dim, int fill_value, bool end) {
+    if (list_ids.size() < src_tensor_dim) {
+      for (size_t i = list_ids.size(); i < src_tensor_dim; ++i) {
+        if (end) {
+          list_ids.push_back(dshape[i]);
+        } else {
+          list_ids.push_back(fill_value);
+        }
       }
-      oshape[i] = (std::max(end, (int)dshape[i]) - begin) / stride;
+    }
+    return list_ids;
+  };
+
+  std::vector<int> begin_ids;
+  std::copy(param.begin.begin(), param.begin.end(), std::back_inserter(begin_ids));
+  begin_ids = expand_axis(begin_ids, num_axis, 0, false);
+
+  std::vector<int> end_ids;
+  std::copy(param.end.begin(), param.end.end(), std::back_inserter(end_ids));
+  end_ids = expand_axis(end_ids, num_axis, 0, true);
+
+  std::vector<int> stride_ids;
+  if (param.stride.ndim() != 0) {
+    std::copy(param.stride.begin(), param.stride.end(), std::back_inserter(stride_ids));
+  }
+  stride_ids = expand_axis(stride_ids, num_axis, 1, false);
+
+  for (dim_t i = 0; i < num_axis; ++i) {
+      int begin_range = stride_ids[i] < 0 ? -1 : 0;
+      int end_range = stride_ids[i] < 0 ? dshape[i] - 1 : dshape[i];
+      int begin = begin_ids[i] < 0 ? dshape[i] + begin_ids[i] : begin_ids[i];
+      int end = end_ids[i] < 0 ? dshape[i] + end_ids[i] : end_ids[i];
+      begin = begin < begin_range ? begin_range : begin > end_range ? end_range : begin;
+      end = end < begin_range ? begin_range : end > end_range ? end_range : end;
+      if (stride_ids[i] < 0) {
+        begin = dshape[i] - begin - 1;
+        end = dshape[i] - end - 1;
+      }
+      int stride = stride_ids[i] < 0 ? -stride_ids[i] : stride_ids[i];
+      int interval = std::abs(end - begin);
+      int sliceinp = static_cast<int>((interval / stride) + ((interval % stride) != 0 ? 1 : 0));
+      CHECK((0 != sliceinp) && (begin < end))
+        << ": Input [Begin=" << begin_ids[i] << ", End=" << end_ids[i]
+        << "] is invalid for axis=" << i;
+      oshape[i] = sliceinp;
   }
   NNVM_ASSIGN_OUTPUT_SHAPE(attrs, *out_shape, 0, oshape);
   return true;

@@ -50,9 +50,9 @@ struct SplitParam : public dmlc::Parameter<SplitParam> {
 
 struct StridedSliceParam : public dmlc::Parameter<StridedSliceParam> {
   // numpy convention, only support indices, not support list.
-  Tuple<int> begin;
-  Tuple<int> end;
-  Tuple<int> stride;
+  Tuple<int64_t> begin;
+  Tuple<int64_t> end;
+  Tuple<int64_t> stride;
 
   DMLC_DECLARE_PARAMETER(StridedSliceParam) {
     DMLC_DECLARE_FIELD(begin)
@@ -61,7 +61,6 @@ struct StridedSliceParam : public dmlc::Parameter<StridedSliceParam> {
         .describe("Indices for end of the slice");
     DMLC_DECLARE_FIELD(stride)
         .describe("Stride values of the slice");
-
   }
 };
 

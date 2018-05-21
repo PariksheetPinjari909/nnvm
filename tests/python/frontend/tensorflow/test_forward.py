@@ -115,6 +115,15 @@ def test_reshape(ip_shape, tf_op_shape, dtype):
     input_value = init_data_array(ip_shape, dtype)
     test_forward(y, [input_value], [x], ['x'], dtype)
 
+def test_stridedslice(ip_shape, begin, end, stride, dtype, begin_mask=0, end_mask=0, new_axis_mask=0, shrink_axis_mask=0, ellipsis_mask=0):
+    tf.reset_default_graph()
+    x = tf.placeholder(dtype, ip_shape)
+    y = tf.strided_slice(x, begin, end, stride, begin_mask=begin_mask,
+                         end_mask=end_mask, new_axis_mask=new_axis_mask,
+                         shrink_axis_mask=shrink_axis_mask, ellipsis_mask=ellipsis_mask, name="test_strided_slice")
+    input_value = init_data_array(ip_shape, dtype)
+    test_forward(y, [input_value], [x], ['Placeholder'], dtype)
+
 def test_gather(ip_shape, indice_shape, indice_value, axis, dtype):
     tf.reset_default_graph()
     inputs = []
@@ -252,6 +261,17 @@ def test_forward_reshape():
     test_reshape([1, 2, 3, 3], [2, -1], 'float32')
     test_reshape([1, 3, 2, 2], [-1, 3], 'int32')
 
+def test_forward_stridedslice():
+    '''test add layer'''
+    test_stridedslice((3, 4, 3), [1, 0], [4, 3], [2, 1], 'float32')
+    test_stridedslice((3, 4, 3), [1, -1, 0], [4, -5, 3], [2, -1, 1], 'float32')
+    test_stridedslice((3, 4, 3), [1, -3, 0], [2, -2, 3], [1, 1, 1], 'float32')
+    test_stridedslice((3, 4, 3), [1, 1, 0], [4, 4, 3], [2, 1, 1], 'float32')
+    test_stridedslice((3, 4, 3), [1, 0], [4, 3], [2, 1], 'float32', begin_mask=2, end_mask=2)
+    test_stridedslice((3, 4, 3), [1, 1, 0], [4, 4, 3], [2, 1, 1], 'float32', new_axis_mask=2)
+    test_stridedslice((3, 4, 3), [1, 1, 0], [4, 4, 3], [2, 1, 1], 'float32', shrink_axis_mask=2)
+    test_stridedslice((3, 4, 3), [1, 0], [4, 3], [2, 1], 'float32', ellipsis_mask=2)
+
 def test_forward_stack():
     '''test stack layer'''
     test_stack((1,), 0, 1, 'float32')
@@ -278,3 +298,4 @@ if __name__ == '__main__':
     test_forward_fill()
     test_forward_gather()
     test_forward_lstm()
+    test_forward_stridedslice()
