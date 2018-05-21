@@ -857,7 +857,7 @@ inline bool TakeInferShape(const NodeAttrs& attrs,
 
     size_t posi = 0;
     for (size_t i = 0; i < dshape.ndim(); ++i) {
-      if (((int)i) == axis) {
+      if (static_cast<int>(i) == axis) {
         for (size_t j = 0; j < indicesshape.ndim(); ++j) {
           oshape[posi++] = indicesshape[j];
         }
