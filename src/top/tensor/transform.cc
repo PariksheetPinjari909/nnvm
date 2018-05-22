@@ -911,8 +911,9 @@ NNVM_REGISTER_OP(take)
         return Array<Tensor>{
             topi::take(inputs[0], inputs[1])};
       } else {
+        int axis = param.axis.value();
         return Array<Tensor>{
-            topi::take(inputs[0], inputs[1], param.axis.value())};
+            topi::take(inputs[0], inputs[1], axis)};
       }
   });
 
