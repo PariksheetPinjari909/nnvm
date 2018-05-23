@@ -638,11 +638,14 @@ inline bool SqueezeShape(const nnvm::NodeAttrs& attrs,
   } else {
     std::unordered_set<dim_t> axis_checker;
     for (size_t i = 0; i < param.axis.ndim(); ++i) {
+      int real_axis;
       if (param.axis[i] < 0) {
-        int real_axis = param.axis[i] + static_cast<int>(shp.ndim());
-        CHECK(real_axis < static_cast<int>(shp.ndim()) && real_axis >= 0);
-        axis_checker.insert(real_axis);
+        real_axis = param.axis[i] + static_cast<int>(shp.ndim());
+      } else {
+        real_axis = param.axis[i];
       }
+      CHECK(real_axis < static_cast<int>(shp.ndim()) && real_axis >= 0);
+      axis_checker.insert(real_axis);
     }
     for (size_t i = 0; i < shp.ndim(); ++i) {
       if (axis_checker.find(i) == axis_checker.end()) {
@@ -760,7 +763,7 @@ inline bool TransposeCorrectLayout(const NodeAttrs& attrs,
     } else {
       CHECK_EQ(input.ndim(), param.axes.ndim());
       for (size_t i = 0; i < input.ndim(); ++i) {
-        CHECK(param.axes[i] < input.ndim());
+        CHECK(param.axes[i] < static_cast<int>(input.ndim()));
         new_layout << input.at(param.axes[i]);
       }
     }
