@@ -926,10 +926,10 @@ NNVM_REGISTER_OP(take)
       const TakeParam& param = nnvm::get<TakeParam>(attrs.parsed);
       if (!param.axis) {
         return Array<Tensor>{
-            topi::take(inputs[0], inputs[1])};
+            topi::take(inputs[0], inputs[1]) };
       } else {
         return Array<Tensor>{
-            topi::take(inputs[0], inputs[1], param.axis.value())};
+            topi::take(inputs[0], inputs[1], param.axis.value()) };
       }
   });
 
