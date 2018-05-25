@@ -357,6 +357,10 @@ def verify_take(src_shape, indices_src, axis=None):
         np.testing.assert_allclose(out.asnumpy(), out_np, atol=1e-5, rtol=1e-5)
 
 def test_take():
+    verify_take((4,), [1])
+    verify_take((4,), [[0,1,2,3]])
+    verify_take((3,3,3), [[11,25]])
+    verify_take((4,), [[0,1],[2,3]])
     verify_take((4,), [1], 0)
     verify_take((2,2), [[[1,0],[0,1]]], 0)
     verify_take((2,2), [[[1,0],[0,1]]], 1)

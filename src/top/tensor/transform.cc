@@ -835,8 +835,8 @@ Examples::
 DMLC_REGISTER_PARAMETER(TakeParam);
 
 inline bool TakeInferShape(const NodeAttrs& attrs,
-                            std::vector<TShape>* in_shape,
-                            std::vector<TShape>* out_shape) {
+                           std::vector<TShape>* in_shape,
+                           std::vector<TShape>* out_shape) {
   const TShape& dshape = (*in_shape)[0];
   const TShape& indicesshape = (*in_shape)[1];
   if (dshape.ndim() == 0) return false;
@@ -884,6 +884,22 @@ inline bool TakeInferType(const NodeAttrs& attrs,
   return true;
 }
 
+inline bool TakeCorrectLayout(const NodeAttrs& attrs,
+                              std::vector<Layout> *ilayouts,
+                              const std::vector<Layout> *last_ilayouts,
+                              std::vector<Layout> *olayouts) {
+  CHECK_EQ(ilayouts->size(), last_ilayouts->size());
+  CHECK_EQ(olayouts->size(), 1U);
+
+  for (size_t i = 0; i < ilayouts->size(); ++i) {
+    const Layout& input = last_ilayouts->at(i).defined() ?
+                          last_ilayouts->at(i) : ilayouts->at(i);
+    NNVM_ASSIGN_LAYOUT(*ilayouts, i, input);
+  }
+
+  return true;
+}
+
 NNVM_REGISTER_OP(take)
 .describe(R"code(Take elements from an array along an axis.
 
@@ -899,6 +915,7 @@ NNVM_REGISTER_OP(take)
 .set_attr_parser(ParamParser<TakeParam>)
 .set_attr<FInferShape>("FInferShape", TakeInferShape)
 .set_attr<FInferType>("FInferType", TakeInferType)
+.set_attr<FCorrectLayout>("FCorrectLayout", TakeCorrectLayout)
 .set_num_inputs(2)
 .set_num_outputs(1)
 .set_support_level(1)
@@ -911,9 +928,8 @@ NNVM_REGISTER_OP(take)
         return Array<Tensor>{
             topi::take(inputs[0], inputs[1])};
       } else {
-        int axis = param.axis.value();
         return Array<Tensor>{
-            topi::take(inputs[0], inputs[1], axis)};
+            topi::take(inputs[0], inputs[1], param.axis.value())};
       }
   });
 
