@@ -33,10 +33,14 @@ nnvm::Graph PrecomputePrune(nnvm::Graph src) {
     if (node.node->is_variable()) {
       expressn += node.node->attrs.name;
     } else {
-      expressn += node.node->op()->name;
       for (const auto& e : node.node->inputs) {
         expressn = find_cummulative_expression(e, expressn);
       }
+      // Append all the params name & value also in the expressn
+      for (auto kv : node.node->attrs.dict) {
+        expressn = kv.first + kv.second + expressn;
+      }
+      expressn = node.node->op()->name + expressn;
     }
     return expressn;
   };
@@ -77,7 +81,6 @@ nnvm::Graph PrecomputePrune(nnvm::Graph src) {
       }
       can_be_pruned = false;
     }
-
     for (const auto& e : n->inputs) {
       if (!pruned.count(e.node.get())) {
         can_be_pruned = false;

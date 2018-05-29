@@ -57,13 +57,16 @@ def test_ewise_injective():
     graph_util.check_graph_equal(g1, g2)
 
     for target, ctx in ctx_list():
-        graph, lib, _ = nnvm.compiler.build(k, target, shape_dict)
         x_np = np.array([1, 4, 9, 16]).astype("float32")
         y_np = np.array([4, 4, 4, 4]).astype("float32")
         n_np = np.array([9, 9, 9, 9]).astype("float32")
+        params = {"y": y_np, "n": n_np}
+        with nnvm.compiler.build_config(opt_level=3):
+            graph, lib, params = nnvm.compiler.build(k, target, shape_dict, params=params)
         m = graph_runtime.create(graph, lib, ctx)
-        m.set_input(y=y_np, n=n_np)
-        m.run(x=x_np)
+        params["x"] = x_np
+        m["load_params"](nnvm.compiler.save_param_dict(params))
+        m.run()
         out = m.get_output(0, tvm.nd.empty(dshape))
         np.testing.assert_allclose(
             out.asnumpy(),  np.array([23, 29, 39, 53]).astype("float32"),
@@ -104,12 +107,15 @@ def test_ops_with_diffparams():
     graph_util.check_graph_equal(g1, g2)
 
     for target, ctx in ctx_list():
-        graph, lib, _ = nnvm.compiler.build(k, target, shape_dict)
         x_np = np.array([1, 4, 9, 16]).astype("float32")
         y_np = np.array([4, 4, 4, 4]).astype("float32")
+        params = {"y": y_np}
+        with nnvm.compiler.build_config(opt_level=3):
+            graph, lib, params = nnvm.compiler.build(k, target, shape_dict, params=params)
         m = graph_runtime.create(graph, lib, ctx)
-        m.set_input(y=y_np)
-        m.run(x=x_np)
+        params["x"] = x_np
+        m["load_params"](nnvm.compiler.save_param_dict(params))
+        m.run()
         out = m.get_output(0, tvm.nd.empty(dshape))
         np.testing.assert_allclose(
             out.asnumpy(),  np.array([10, 20, 36, 58]).astype("float32"),

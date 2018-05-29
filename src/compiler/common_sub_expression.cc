@@ -17,30 +17,30 @@ nnvm::Graph CommonSubExpression(nnvm::Graph src) {
   std::function<std::string(const NodeEntry& node, std::string)>find_cummulative_expression
     = [&find_cummulative_expression, &commonNodeList, &unique_expressn]
     (const NodeEntry& node, std::string expressn)->std::string {
-    std::string tempExprssn = "";
+    std::string tempExpressn = "";
     // If varibale, just get the attribute name
     if (node.node->is_variable()) {
-      tempExprssn += node.node->attrs.name;
+      tempExpressn += node.node->attrs.name;
     } else {
       for (auto& e : node.node->inputs) {
-        tempExprssn = find_cummulative_expression(e, tempExprssn);
-        if (unique_expressn.count(tempExprssn)) {
+        tempExpressn = find_cummulative_expression(e, tempExpressn);
+        if (unique_expressn.count(tempExpressn)) {
           // Replace current one with already commoned node
-          e = commonNodeList[unique_expressn.at(tempExprssn)];
+          e = commonNodeList[unique_expressn.at(tempExpressn)];
           // Replace already commoned expression with its global index
-          tempExprssn = std::to_string(unique_expressn.at(tempExprssn));
+          tempExpressn = std::to_string(unique_expressn.at(tempExpressn));
         }
-        expressn += tempExprssn;
-        tempExprssn = "";
+        expressn += tempExpressn;
+        tempExpressn = "";
       }
 
       // Append all the params name & value also in the expressn
       for (auto kv : node.node->attrs.dict) {
         expressn = kv.first + kv.second + expressn;
       }
-      tempExprssn = node.node->op()->name + expressn;
+      tempExpressn = node.node->op()->name + expressn;
     }
-    return tempExprssn;
+    return tempExpressn;
   };
 
   DFSVisit(src.outputs, [&](const nnvm::NodePtr& n) {
